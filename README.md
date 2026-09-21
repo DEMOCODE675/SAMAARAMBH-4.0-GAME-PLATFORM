@@ -65,8 +65,19 @@ Window 2 ( http://localhost../projector ): Display the stage view for the audien
 Window 3 ( http://localhost../play ): Register as a player (/play) using a Device Sync PIN to test answering questions, joining squads, and viewing real-time latency scoring.
 
 
-** TechArena Project Folder Architecture **
 
+### 🧩 How to Add a New Game Type (e.g., Phishing Mail Recognition)
+
+If you want to introduce a brand new interactive game mode to TechArena, follow this 3-step blueprint:
+1. **Admin CMS (`src/pages/admin/AdminDashboard.jsx`):** Register the new challenge type name in the dropdown and add form inputs to capture its content payload (e.g., email text and correct answer).
+2. **Mobile Router (`src/pages/mobile/MobileController.jsx`):** Add a matching `case` in the switch statement to intercept the new block type when pushed live.
+3. **Mobile View (`src/pages/mobile/components/PhishingUI.jsx`):** Build the student-facing interactive interface that submits the user's choice and timestamp back to the Firestore `answers` collection.
+
+
+
+## 📂 Project Architecture
+
+```text
 techarena/
 │
 ├── public/                     # Static assets (favicons, public images)
