@@ -13,13 +13,13 @@ function DevHome() {
       <h1 className="text-4xl font-bold text-cyan-400 mb-8">TechArena Dev Menu</h1>
       <div className="flex flex-col gap-4 w-full max-w-sm">
         <Link to="/play" className="bg-gray-900 border border-cyan-500 p-4 rounded text-center hover:bg-gray-800">
-          📱 Join as Player (/play)
+          Join as Player
         </Link>
         <Link to="/projector" className="bg-gray-900 border border-green-500 p-4 rounded text-center hover:bg-gray-800">
-          📽️ Open Projector (/projector)
+          Open Projector
         </Link>
         <Link to="/admin" className="bg-gray-900 border border-red-500 p-4 rounded text-center hover:bg-gray-800">
-          ⚙️ Admin Dashboard (/admin)
+          Admin Dashboard
         </Link>
       </div>
     </div>

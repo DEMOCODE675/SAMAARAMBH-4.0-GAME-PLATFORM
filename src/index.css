@@ -4,3 +4,10 @@ body {
   background-color: #000; /* Dark hacker vibe default */
   color: #fff;
 }
+/* Add to your global CSS */
+.bg-cyber-grid {
+  background-image: linear-gradient(to right, rgba(34, 197, 94, 0.05) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(34, 197, 94, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+

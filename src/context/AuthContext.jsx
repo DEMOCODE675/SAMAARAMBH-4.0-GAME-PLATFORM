@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { auth, db } from '../config/firebase';
 import { signInAnonymously } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 
 export const AuthContext = createContext();
 
@@ -9,17 +9,41 @@ export function AuthProvider({ children }) {
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if they already have a PIN saved in their browser
+  // Check if they already have a PIN saved in their browser on mount
   useEffect(() => {
+    let unsubscribePlayer = null;
+
     const checkLocalSession = async () => {
       const savedPin = localStorage.getItem('techarena_pin');
       if (savedPin) {
-        await signInWithPin(savedPin);
-      } else {
-        setLoading(false);
+        try {
+          await signInAnonymously(auth);
+          const playerRef = doc(db, 'players', savedPin);
+          const docSnap = await getDoc(playerRef);
+
+          if (docSnap.exists()) {
+            // Attach a real-time listener to keep player data (like teamCode and score) synced
+            unsubscribePlayer = onSnapshot(playerRef, (docSnapshot) => {
+              if (docSnapshot.exists()) {
+                setPlayer(docSnapshot.data());
+              }
+            });
+          } else {
+            localStorage.removeItem('techarena_pin');
+          }
+        } catch (error) {
+          console.error("Session recovery failed:", error);
+          localStorage.removeItem('techarena_pin');
+        }
       }
+      setLoading(false);
     };
+
     checkLocalSession();
+
+    return () => {
+      if (unsubscribePlayer) unsubscribePlayer();
+    };
   }, []);
 
   // Generate a new PIN for a new student
@@ -34,6 +58,7 @@ export function AuthProvider({ children }) {
         pin: pin,
         uid: userCredential.user.uid,
         teamCode: null,
+        score: 0,
         createdAt: serverTimestamp()
       };
       
@@ -47,7 +72,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Let them log in on a laptop using their PIN
+  // Let them log in or reconnect using their PIN
   const signInWithPin = async (pin) => {
     try {
       await signInAnonymously(auth);
@@ -70,8 +95,13 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const logout = () => {
+    localStorage.removeItem('techarena_pin');
+    setPlayer(null);
+  };
+
   return (
-    <AuthContext.Provider value={{ player, loading, registerNewPlayer, signInWithPin }}>
+    <AuthContext.Provider value={{ player, loading, registerNewPlayer, signInWithPin, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );

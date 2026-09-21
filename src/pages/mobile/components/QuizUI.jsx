@@ -4,6 +4,7 @@ import { GameContext } from '../../../context/GameContext';
 import { db } from '../../../config/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
+
 export default function QuizUI({ payload }) {
   const { player } = useContext(AuthContext);
   const { gameState } = useContext(GameContext);

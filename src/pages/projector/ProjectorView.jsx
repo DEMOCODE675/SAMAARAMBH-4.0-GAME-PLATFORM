@@ -70,10 +70,10 @@ export default function ProjectorView() {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-black text-white font-mono flex flex-col items-center justify-center p-12 text-center">
         <h2 className="text-4xl text-gray-500 tracking-[0.5em] uppercase mb-6">Welcome to</h2>
-        <h1 className="text-8xl font-extrabold text-cyan-500 tracking-widest mb-16 drop-shadow-[0_0_40px_rgba(6,182,212,0.4)]">TECH ARENA</h1>
+        <h1 className="text-8xl font-extrabold text-cyan-500 tracking-widest mb-16 drop-shadow-[0_0_40px_rgba(6,182,212,0.4)]">{/*TECH ARENA*/}SAMARAMBH 4.0</h1>
         <div className="bg-gray-900 border-2 border-cyan-800 p-10 rounded-3xl shadow-[0_0_50px_rgba(6,182,212,0.15)]">
-          <p className="text-3xl text-gray-400 mb-6 uppercase tracking-widest">To join the network, go to:</p>
-          <p className="text-7xl font-bold text-green-400 tracking-wider">YOUR-URL.com/play</p>
+          <p className="text-3xl text-gray-400 mb-6 uppercase tracking-widest">To join the Game, go to:</p>
+          <p className="text-7xl font-bold text-green-400 tracking-wider">SAMARAMBH_event.com</p>
         </div>
       </motion.div>
     );
@@ -90,8 +90,9 @@ export default function ProjectorView() {
           transition={{ duration: 0.5 }}
           className="text-center mb-16 pt-8"
         >
-          <div className="inline-block px-6 py-2 bg-red-950/60 border border-red-500 rounded-full text-red-400 text-sm tracking-[0.3em] uppercase mb-4 animate-pulse">
-            ⚡ Event Concluded ⚡
+          <div className="inline-block px-6 py-2 bg-red-950/60 border border-red-500 rounded-full text-white text-sm tracking-[0.3em] uppercase mb-4 ">
+            {/** ⚡ Event Concluded ⚡ */}
+            PROJECTOR SCREEN
           </div>
           <h1 className="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-green-400 tracking-widest drop-shadow-[0_0_30px_rgba(6,182,212,0.4)]">
             {isTeamMode ? 'SQUAD RANKINGS' : 'OPERATIVE RANKINGS'}
