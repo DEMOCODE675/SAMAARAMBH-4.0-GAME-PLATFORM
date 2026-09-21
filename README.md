@@ -23,48 +23,6 @@ TechArena operates on a 3-tier real-time sync model powered by Firebase:
 
 ---
 
-##  Getting Started on Your Local Machine
-
-Follow these steps to clone and run TechArena locally for development or testing:
-
-### 1. Clone the Repository
-Open your terminal and run:
-```bash
-git clone [https://github.com/DEMOCODE675/TechArena.git](https://github.com/DEMOCODE675/TechArena.git)
-cd TechArena
-
-
-2. Install Dependencies
-
-npm install
-
-3. Configure Environment Variables
-Create a file named .env in the root directory of the project and add your Firebase project credentials
-
-VITE_FIREBASE_API_KEY=your_api_key_here
-VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain_here
-VITE_FIREBASE_PROJECT_ID=your_project_id_here
-VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket_here
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id_here
-VITE_FIREBASE_APP_ID=your_app_id_here
-
-
-4. Run the Development Server
-
-npm run dev
-
-
-- How to Test Locally
-
-Open three separate browser windows (or use split view):
-
-Window 1 ( http://localhost../admin ): Navigate to your admin route to build challenges and control live states.
-
-Window 2 ( http://localhost../projector ): Display the stage view for the audience.
-
-Window 3 ( http://localhost../play ): Register as a player (/play) using a Device Sync PIN to test answering questions, joining squads, and viewing real-time latency scoring.
-
-
 
 ### 🧩 How to Add a New Game Type (e.g., Phishing Mail Recognition)
 
@@ -118,3 +76,47 @@ techarena/
 ├── package.json                # Project dependencies (React, Firebase, Framer Motion, Tailwind)
 ├── README.md                   # Project documentation & collaborator local setup guide
 └── vite.config.js              # Vite bundler configuration
+
+
+
+
+##  Getting Started on Your Local Machine
+
+Follow these steps to clone and run TechArena locally for development or testing:
+
+### 1. Clone the Repository
+Open your terminal and run:
+```bash
+git clone [https://github.com/DEMOCODE675/TechArena.git](https://github.com/DEMOCODE675/TechArena.git)
+cd TechArena
+
+
+2. Install Dependencies
+
+npm install
+
+3. Configure Environment Variables
+Create a file named .env in the root directory of the project and add your Firebase project credentials
+
+VITE_FIREBASE_API_KEY=your_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain_here
+VITE_FIREBASE_PROJECT_ID=your_project_id_here
+VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket_here
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id_here
+VITE_FIREBASE_APP_ID=your_app_id_here
+
+
+4. Run the Development Server
+
+npm run dev
+
+
+- How to Test Locally
+
+Open three separate browser windows (or use split view):
+
+Window 1 ( http://localhost../admin ): Navigate to your admin route to build challenges and control live states.
+
+Window 2 ( http://localhost../projector ): Display the stage view for the audience.
+
+Window 3 ( http://localhost../play ): Register as a player (/play) using a Device Sync PIN to test answering questions, joining squads, and viewing real-time latency scoring.
