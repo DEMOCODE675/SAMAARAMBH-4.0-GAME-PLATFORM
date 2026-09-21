@@ -32,21 +32,21 @@ export default function PlayerLogin() {
     <div className="min-h-screen bg-black text-green-400 font-mono flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <h1 className="text-5xl font-extrabold text-cyan-400 mb-2 tracking-wider">TechArena</h1>
-          <p className="text-gray-400 uppercase tracking-widest text-xs">Awaiting Connection...</p>
+          <h1 className="text-5xl font-extrabold text-cyan-400 mb-2 tracking-wider">SAMARAMBH 4.0</h1>
+        { /* <p className="text-gray-400 uppercase tracking-widest text-xs">Awaiting Connection...</p> */ }
         </div>
-
+        
         <form onSubmit={handleSubmit} className="bg-gray-900 border-2 border-green-800 p-6 rounded-xl shadow-[0_0_20px_rgba(34,197,94,0.15)]">
           
           <label className="block text-sm mb-2 text-green-300 uppercase tracking-wide">
-            {isReturningUser ? 'Enter 4-Digit PIN' : 'Enter Your Alias'}
+            {isReturningUser ? 'Enter 4-Digit PIN' : 'Enter Your Name'}
           </label>
           
           <input 
             type={isReturningUser ? "number" : "text"}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder={isReturningUser ? "e.g. 8392" : "HackerCat99"}
+            placeholder={isReturningUser ? "e.g. 8392" : "e.g. Nova"}
             className="w-full bg-black border border-green-600 focus:border-cyan-400 outline-none px-4 py-3 text-white rounded mb-4 text-center text-lg"
             autoComplete="off"
             required
