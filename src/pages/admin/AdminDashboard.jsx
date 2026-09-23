@@ -20,9 +20,12 @@ export default function AdminDashboard() {
   const [termMission, setTermMission] = useState('');
   const [termCorrect, setTermCorrect] = useState('');
 
-  const [photoUrl, setPhotoUrl] = useState('');
+  // 🚀 Upgraded Threat Detection / Photo Recognition Fields
+  const [photoUrls, setPhotoUrls] = useState('');
   const [photoPrompt, setPhotoPrompt] = useState('');
+  const [photoOptions, setPhotoOptions] = useState('');
   const [photoCorrect, setPhotoCorrect] = useState('');
+  const [photoExplanation, setPhotoExplanation] = useState(''); // 🧠 Operative Briefing Explanation
 
   const [puzzlePrompt, setPuzzlePrompt] = useState('');
   const [puzzleCorrect, setPuzzleCorrect] = useState('');
@@ -33,16 +36,6 @@ export default function AdminDashboard() {
   const [broadcastMode, setBroadcastMode] = useState('solo'); 
   const [liveState, setLiveState] = useState(null);
   const [activeRoundTab, setActiveRoundTab] = useState('Round 1');
-  // Inside AdminDashboard.jsx controller view
-const [allowDisconnect, setAllowDisconnect] = useState(true);
-
-// Function to update disconnect permission globally
-const handleToggleDisconnect = async (status) => {
-  setAllowDisconnect(status);
-  await setDoc(doc(db, 'events', 'samarambh'), {
-    allowDisconnect: status
-  }, { merge: true });
-};
 
   useEffect(() => {
     if (activeTab === 'controller') fetchBlocks();
@@ -77,7 +70,14 @@ const handleToggleDisconnect = async (status) => {
       } else if (uiType === 'terminal_hack') {
         payload = { consoleText: termLog, missionText: termMission, correct: termCorrect };
       } else if (uiType === 'photo_recognize') {
-        payload = { imageUrl: photoUrl, prompt: photoPrompt, correct: photoCorrect };
+        // Parses comma-separated images, options, and includes the explanation payload
+        payload = { 
+          images: photoUrls.split(',').map(url => url.trim()).filter(Boolean), 
+          prompt: photoPrompt, 
+          options: photoOptions.split(',').map(opt => opt.trim()).filter(Boolean),
+          correct: photoCorrect,
+          explanation: photoExplanation 
+        };
       } else if (uiType === 'logic_puzzle') {
         payload = { puzzleText: puzzlePrompt, correct: puzzleCorrect };
       }
@@ -234,7 +234,7 @@ const handleToggleDisconnect = async (status) => {
                 <select value={uiType} onChange={(e) => setUiType(e.target.value)} className="w-full bg-black border border-gray-700 p-3 rounded text-white outline-none focus:border-red-500">
                   <option value="mcq">Standard MCQ</option>
                   <option value="terminal_hack">Terminal Hack</option>
-                  <option value="photo_recognize">Photo Recognition</option>
+                  <option value="photo_recognize">Threat / Photo Recognition</option>
                   <option value="logic_puzzle">Logic Puzzle</option>
                 </select>
               </div>
@@ -265,9 +265,26 @@ const handleToggleDisconnect = async (status) => {
 
             {uiType === 'photo_recognize' && (
               <div className="space-y-4">
-                <div><label className="block text-gray-400 text-sm mb-2">Image URL</label><input type="url" value={photoUrl} onChange={e => setPhotoUrl(e.target.value)} className="w-full bg-black border border-gray-700 p-3 rounded text-white" placeholder="https://example.com/logo.png" required /></div>
-                <div><label className="block text-gray-400 text-sm mb-2">Identification Prompt</label><input type="text" value={photoPrompt} onChange={e => setPhotoPrompt(e.target.value)} className="w-full bg-black border border-gray-700 p-3 rounded text-white" placeholder="Identify this data structure or algorithm logo" required /></div>
-                <div><label className="block text-gray-400 text-sm mb-2">Correct Answer</label><input type="text" value={photoCorrect} onChange={e => setPhotoCorrect(e.target.value)} className="w-full bg-black border border-gray-700 p-3 rounded text-white border-l-4 border-l-green-500" placeholder="Red-Black Tree" required /></div>
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Image URLs (Comma-separated for side-by-side images)</label>
+                  <input type="text" value={photoUrls} onChange={e => setPhotoUrls(e.target.value)} className="w-full bg-black border border-gray-700 p-3 rounded text-white" placeholder="https://imgur.com/fake.png, https://imgur.com/real.png" required />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Analysis Prompt</label>
+                  <input type="text" value={photoPrompt} onChange={e => setPhotoPrompt(e.target.value)} className="w-full bg-black border border-gray-700 p-3 rounded text-white" placeholder="Which indicator confirms the left login banner is a phishing clone?" required />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">4 Multi-Choice Options (Comma-separated)</label>
+                  <input type="text" value={photoOptions} onChange={e => setPhotoOptions(e.target.value)} className="w-full bg-black border border-gray-700 p-3 rounded text-white" placeholder="Mismatched SSL, Subdomain Typo, Missing Footer, Wrong Font" required />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Correct Answer (Must match one of the options)</label>
+                  <input type="text" value={photoCorrect} onChange={e => setPhotoCorrect(e.target.value)} className="w-full bg-black border border-gray-700 p-3 rounded text-white border-l-4 border-l-green-500" placeholder="Subdomain Typo" required />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Operative Briefing / Explanation (Why this answer is correct)</label>
+                  <textarea value={photoExplanation} onChange={e => setPhotoExplanation(e.target.value)} rows="3" className="w-full bg-black border border-gray-700 p-3 rounded text-cyan-300" placeholder="Explain the security flaw (e.g. The domain uses netflix-support.com instead of netflix.com)" required />
+                </div>
               </div>
             )}
 
@@ -283,26 +300,6 @@ const handleToggleDisconnect = async (status) => {
         )}
 
         {/* TAB 2: LIVE CONTROLLER */}
-        {/*<div className="bg-gray-900 border border-gray-700 p-6 rounded-lg flex justify-between items-center mt-6">
-  <div>
-    <h3 className="text-white font-bold mb-1">Player Disconnect Permissions</h3>
-    <p className="text-gray-500 text-xs">Allow players to disconnect sessions from their mobile view.</p>
-  </div>
-  <div className="flex gap-2">
-    <button 
-      onClick={() => handleToggleDisconnect(true)}
-      className={`px-4 py-2 rounded font-bold text-xs ${liveState?.allowDisconnect !== false ? 'bg-green-600 text-black' : 'bg-gray-800 text-gray-400'}`}
-    >
-      ENABLED
-    </button>
-    <button 
-      onClick={() => handleToggleDisconnect(false)}
-      className={`px-4 py-2 rounded font-bold text-xs ${liveState?.allowDisconnect === false ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400'}`}
-    >
-      LOCKED (DISABLED)
-    </button>
-  </div>
-</div>*/}
         {activeTab === 'controller' && (
           <div className="space-y-6">
             

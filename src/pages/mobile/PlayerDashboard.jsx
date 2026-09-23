@@ -3,6 +3,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { GameContext } from '../../context/GameContext'; 
 import { db } from '../../config/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
+import PlayerRoundReview from './components/PlayerRoundReview';
 
 export default function PlayerDashboard({ onOpenTeam }) {
   const { player, logout } = useContext(AuthContext);
@@ -75,23 +76,30 @@ export default function PlayerDashboard({ onOpenTeam }) {
         {/* HEADER SECTION */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-800 pb-6">
           <div className="text-center md:text-left mb-4 md:mb-0">
-            <span className="text-xs text-gray-400 uppercase tracking-widest">Active Operative Terminal</span>
+            <span className="text-xs text-gray-400 uppercase tracking-widest">Players Room</span>
             <h1 className="text-3xl md:text-5xl font-extrabold text-cyan-400 mt-1">{player.name}</h1>
           </div>
           
           <div className="flex items-center gap-4">
             <div className="bg-gray-900 border border-gray-700 px-4 py-2 rounded-xl text-center">
-              <span className="text-[10px] text-gray-400 uppercase block">Sync PIN</span>
+              <span className="text-[10px] text-gray-400 uppercase block">Login PIN</span>
               <span className="text-xl font-bold text-white tracking-widest">{player.pin}</span>
             </div>
             <button 
               onClick={onOpenTeam}
               className="bg-cyan-600 hover:bg-cyan-500 text-black text-xs font-extrabold py-3 px-5 rounded-xl uppercase tracking-wider transition-all"
             >
-              {player?.teamCode ? '🛡️ Squad Room' : '➕ Join Squad'}
+              {player?.teamCode ? 'Squad Room' : '➕ Join Squad'}
             </button>
           </div>
         </div>
+
+        {/* 🚀 ROUND PERFORMANCE REVIEW CARD (Triggers automatically when round ends) */}
+        {gameState?.status === 'leaderboard' && (
+          <div className="w-full mb-8">
+            <PlayerRoundReview player={player} gameState={gameState} />
+          </div>
+        )}
 
         {/* MODE SELECTOR TABS */}
         <div className="w-full flex bg-gray-900 rounded-xl p-1.5 border border-gray-800 mb-8 max-w-md mx-auto md:mx-0">
@@ -113,7 +121,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
           </button>
         </div>
 
-        {/* ================= TAB 1: SOLO VIEW (EXPANDED GRID FOR LAPTOPS) ================= */}
+        {/* ================= TAB 1: SOLO VIEW ================= */}
         {activeTab === 'solo' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
@@ -121,7 +129,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
             <div className="md:col-span-1 flex flex-col gap-6">
               <div className="w-full bg-gradient-to-br from-cyan-950 to-gray-900 border-2 border-cyan-500 p-6 rounded-2xl shadow-[0_0_25px_rgba(6,182,212,0.2)] flex md:flex-col justify-between items-center md:items-start">
                 <div className="mb-0 md:mb-4">
-                  <span className="text-xs text-cyan-400 uppercase tracking-widest font-bold">Your Global Rank</span>
+                  <span className="text-xs text-cyan-400 uppercase tracking-widest font-bold">Your Rank</span>
                   <h2 className="text-4xl md:text-6xl font-black text-white mt-2">#{myRank.rank}</h2>
                 </div>
                 <div className="text-right md:text-left">
@@ -129,25 +137,13 @@ export default function PlayerDashboard({ onOpenTeam }) {
                   <span className="text-xs text-gray-400 uppercase block tracking-widest mt-1">Total Points</span>
                 </div>
               </div>
-
-              {/* Session Control Footer inside column */}
-             {/* <div className="hidden md:block bg-gray-950 border border-gray-800 p-6 rounded-2xl text-center">
-                <p className="text-gray-500 text-xs mb-3">Session Security Controls</p>
-                {canDisconnect ? (
-                  <button onClick={logout} className="w-full bg-red-950/40 hover:bg-red-900/50 border border-red-600 text-red-400 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors">
-                    Disconnect Session
-                  </button>
-                ) : (
-                  <p className="text-gray-600 text-xs uppercase tracking-widest">🔒 Session Lock Active</p>
-                )}
-              </div> */}
             </div>
 
             {/* Column 2 & 3: Global Operative Standings List */}
             <div className="md:col-span-2 bg-gray-900/60 border border-gray-800 p-6 rounded-2xl flex flex-col">
               <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
-                <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">Global Operative Leaderboard</h3>
-                <span className="text-xs text-cyan-400 font-mono">{allPlayers.length} Active Operatives</span>
+                <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">Operative Leaderboard</h3>
+                <span className="text-xs text-cyan-400 font-mono">{allPlayers.length} Active Players</span>
               </div>
               
               <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
@@ -182,7 +178,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
           </div>
         )}
 
-        {/* ================= TAB 2: TEAM VIEW (EXPANDED GRID FOR LAPTOPS) ================= */}
+        {/* ================= TAB 2: TEAM VIEW ================= */}
         {activeTab === 'team' && (
           <div className="w-full">
             {player?.teamCode ? (
@@ -206,14 +202,14 @@ export default function PlayerDashboard({ onOpenTeam }) {
                     onClick={onOpenTeam}
                     className="w-full bg-transparent border-2 border-green-600 text-green-400 font-bold py-3.5 rounded-xl hover:bg-green-950/40 transition-colors uppercase tracking-wider text-xs"
                   >
-                    🛡️ Manage Squad Room
+                   Manage Squad Room
                   </button>
                 </div>
 
                 {/* Column 2 & 3: Global Squad Standings */}
                 <div className="md:col-span-2 bg-gray-900/60 border border-gray-800 p-6 rounded-2xl flex flex-col">
                   <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
-                    <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">Global Squad Leaderboard</h3>
+                    <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">Team Squad Leaderboard</h3>
                     <span className="text-xs text-green-400 font-mono">{allTeams.length} Registered Squads</span>
                   </div>
                   
@@ -250,7 +246,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
             ) : (
               <div className="w-full max-w-md mx-auto bg-gray-900 border border-yellow-600/50 p-8 rounded-2xl text-center my-10">
                 <p className="text-yellow-400 text-base font-bold mb-2">No Squad Linked</p>
-                <p className="text-gray-400 text-xs mb-6 leading-relaxed">You are currently operating solo. Join or create a squad to compete on the global team leaderboard!</p>
+                <p className="text-gray-400 text-xs mb-6 leading-relaxed">You are currently Playing solo. Join or create a squad to compete on the team leaderboard!</p>
                 <button 
                   onClick={onOpenTeam}
                   className="bg-cyan-600 hover:bg-cyan-500 text-black text-xs font-extrabold py-3 px-6 rounded-xl uppercase tracking-wider transition-all"
@@ -262,8 +258,8 @@ export default function PlayerDashboard({ onOpenTeam }) {
           </div>
         )}
 
-        {/* MOBILE FOOTER DISCONNECT (Hidden on desktop since it's in the sidebar column) */}
-        <div className="md:hidden w-full border-t border-gray-800 pt-6 text-center mt-12">
+        {/* MOBILE FOOTER DISCONNECT */}
+       {/* <div className="w-full border-t border-gray-800 pt-6 text-center mt-12">
           {canDisconnect ? (
             <button onClick={logout} className="text-red-500 text-xs hover:text-red-400 underline decoration-red-900">
               Disconnect Session
@@ -273,7 +269,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
               🔒 Session Lock Active (Admin Controlled)
             </p>
           )}
-        </div>
+        </div>*/}
 
       </div>
     </div>
