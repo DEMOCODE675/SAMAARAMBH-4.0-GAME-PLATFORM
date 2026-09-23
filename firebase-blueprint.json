@@ -1,0 +1,29 @@
+{
+  "entities": {
+    "events": {
+      "title": "Events",
+      "description": "Live tech arena tournament state and rounds",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" },
+        "gameMode": { "type": "string" },
+        "activeQuestion": { "type": "object" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "players": {
+      "title": "Players",
+      "description": "Student participants and their scores",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "pin": { "type": "string" },
+        "uid": { "type": "string" },
+        "teamCode": { "type": "string" },
+        "score": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "pin", "score"]
+    }
+  }
+}

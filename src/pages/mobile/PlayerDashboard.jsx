@@ -1,9 +1,52 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../../context/AuthContext';
 import { GameContext } from '../../context/GameContext'; 
 import { db } from '../../config/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 import PlayerRoundReview from './components/PlayerRoundReview';
+import { 
+  Trophy, 
+  Users, 
+  User, 
+  Zap, 
+  Shield, 
+  Copy, 
+  Check, 
+  Search, 
+  LogOut, 
+  Target, 
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Sun,
+  Moon
+} from 'lucide-react';
+
+// Generates 1-2 character initials for clean avatar representation
+const getInitials = (name = '') => {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0 || !parts[0]) return '?';
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+};
+
+// Deterministic pleasing gradient for avatar backgrounds
+const getAvatarGradient = (name = '') => {
+  const gradients = [
+    'from-indigo-500 to-violet-600',
+    'from-blue-500 to-cyan-600',
+    'from-emerald-500 to-teal-600',
+    'from-amber-500 to-orange-600',
+    'from-rose-500 to-pink-600',
+    'from-purple-500 to-fuchsia-600',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return gradients[Math.abs(hash) % gradients.length];
+};
 
 export default function PlayerDashboard({ onOpenTeam }) {
   const { player, logout } = useContext(AuthContext);
@@ -14,28 +57,51 @@ export default function PlayerDashboard({ onOpenTeam }) {
 
   const [allTeams, setAllTeams] = useState([]);
   const [myTeamRank, setMyTeamRank] = useState({ rank: '-', score: 0, teamName: '' });
+  
   const [activeTab, setActiveTab] = useState('solo'); 
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Privacy controls: PIN is strictly private and hidden by default
+  const [showMyPin, setShowMyPin] = useState(false);
+  const [copiedPin, setCopiedPin] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
+  // Theme state: defaults to comfortable eye-friendly Light mode
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('techarena_theme') === 'dark';
+  });
+
+  const myPlayerRowRef = useRef(null);
   const canDisconnect = gameState?.allowDisconnect !== false;
+
+  const toggleTheme = () => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      localStorage.setItem('techarena_theme', next ? 'dark' : 'light');
+      return next;
+    });
+  };
 
   // 1. Real-time listener for players
   useEffect(() => {
     const unsubscribePlayers = onSnapshot(collection(db, 'players'), (snapshot) => {
-      let playersList = [];
-      snapshot.forEach((doc) => {
-        playersList.push({ id: doc.id, ...doc.data() });
+      const playersList = [];
+      snapshot.forEach((docSnap) => {
+        playersList.push({ id: docSnap.id, ...docSnap.data() });
       });
 
       playersList.sort((a, b) => (b.score || 0) - (a.score || 0));
       setAllPlayers(playersList);
 
-      const index = playersList.findIndex((p) => p.pin === player.pin);
+      const index = playersList.findIndex((p) => p.pin === player?.pin);
       if (index !== -1) {
         setMyRank({
           rank: index + 1,
           score: playersList[index].score || 0
         });
       }
+    }, (error) => {
+      console.warn("Players listener error:", error.message);
     });
 
     return () => unsubscribePlayers();
@@ -44,9 +110,9 @@ export default function PlayerDashboard({ onOpenTeam }) {
   // 2. Real-time listener for teams
   useEffect(() => {
     const unsubscribeTeams = onSnapshot(collection(db, 'events', 'samarambh', 'teams'), (snapshot) => {
-      let teamsList = [];
-      snapshot.forEach((doc) => {
-        teamsList.push({ id: doc.id, ...doc.data() });
+      const teamsList = [];
+      snapshot.forEach((docSnap) => {
+        teamsList.push({ id: docSnap.id, ...docSnap.data() });
       });
 
       teamsList.sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
@@ -62,216 +128,793 @@ export default function PlayerDashboard({ onOpenTeam }) {
           });
         }
       }
+    }, (error) => {
+      console.warn("Teams listener error:", error.message);
     });
 
     return () => unsubscribeTeams();
   }, [player?.teamCode]);
 
-  return (
-    <div className="min-h-screen bg-black text-green-400 font-mono p-4 md:p-10 flex flex-col items-center justify-start">
-      
-      {/* WRAPPER CONTAINER: Max width expands gracefully on laptops */}
-      <div className="w-full max-w-sm md:max-w-5xl mx-auto flex flex-col">
+  // Filtered lists: search ONLY by public names (Never search or reveal PINs)
+  const filteredPlayers = useMemo(() => {
+    if (!searchQuery.trim()) return allPlayers;
+    const q = searchQuery.toLowerCase();
+    return allPlayers.filter(p => p.name?.toLowerCase().includes(q));
+  }, [allPlayers, searchQuery]);
 
-        {/* HEADER SECTION */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-800 pb-6">
-          <div className="text-center md:text-left mb-4 md:mb-0">
-            <span className="text-xs text-gray-400 uppercase tracking-widest">Players Room</span>
-            <h1 className="text-3xl md:text-5xl font-extrabold text-cyan-400 mt-1">{player.name}</h1>
-          </div>
+  const filteredTeams = useMemo(() => {
+    if (!searchQuery.trim()) return allTeams;
+    const q = searchQuery.toLowerCase();
+    return allTeams.filter(t => t.teamName?.toLowerCase().includes(q));
+  }, [allTeams, searchQuery]);
+
+  // Copy private PIN
+  const handleCopyPin = (e) => {
+    e.stopPropagation();
+    if (player?.pin) {
+      navigator.clipboard?.writeText(player.pin);
+      setCopiedPin(true);
+      setTimeout(() => setCopiedPin(false), 2000);
+    }
+  };
+
+  // Scroll to player rank
+  const handleScrollToMe = () => {
+    if (myPlayerRowRef.current) {
+      myPlayerRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  // Concise status badge
+  const getGameStatus = () => {
+    if (gameState?.status === 'playing') {
+      return { text: 'Round Live', bg: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' };
+    }
+    if (gameState?.status === 'leaderboard') {
+      return { text: 'Standings Ready', bg: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' };
+    }
+    return { text: 'Ready', bg: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800' };
+  };
+
+  const status = getGameStatus();
+  const topThreePlayers = allPlayers.slice(0, 3);
+  const topThreeTeams = allTeams.slice(0, 3);
+
+  return (
+    <div className={`min-h-screen transition-colors duration-200 ${
+      isDarkMode 
+        ? 'bg-[#0b0f19] text-slate-100 selection:bg-indigo-500 selection:text-white' 
+        : 'bg-slate-50 text-slate-900 selection:bg-indigo-200 selection:text-indigo-900'
+    }`}>
+      
+      {/* Subtle, eye-friendly ambient background glow */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className={`absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-30 transition-opacity ${
+          isDarkMode ? 'bg-indigo-900/30' : 'bg-indigo-200/40'
+        }`} />
+        <div className={`absolute bottom-0 left-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-30 transition-opacity ${
+          isDarkMode ? 'bg-emerald-900/20' : 'bg-emerald-100/50'
+        }`} />
+      </div>
+
+      {/* TOP HEADER BAR */}
+      <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 py-3 md:px-8 transition-colors ${
+        isDarkMode 
+          ? 'bg-[#0b0f19]/85 border-slate-800' 
+          : 'bg-white/85 border-slate-200/80 shadow-sm'
+      }`}>
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
           
-          <div className="flex items-center gap-4">
-            <div className="bg-gray-900 border border-gray-700 px-4 py-2 rounded-xl text-center">
-              <span className="text-[10px] text-gray-400 uppercase block">Login PIN</span>
-              <span className="text-xl font-bold text-white tracking-widest">{player.pin}</span>
+          {/* Top-Left: Logo & App Title */}
+          <div className="flex items-center gap-3">
+            <img 
+              src="/images/logo.jpg" 
+              onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
+              alt="TechArena Logo" 
+              className={`h-10 w-10 md:h-11 md:w-11 rounded-xl object-contain p-1 border shadow-sm transition-all ${
+                isDarkMode 
+                  ? 'bg-slate-900 border-slate-800' 
+                  : 'bg-white border-slate-200'
+              }`}
+            />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-base md:text-lg tracking-tight">
+                  Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+                </span>
+                <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full border ${status.bg}`}>
+                  {status.text}
+                </span>
+              </div>
+              <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Samarambh
+              </p>
             </div>
+          </div>
+
+          {/* Top-Right Controls */}
+          <div className="flex items-center gap-2 md:gap-2.5">
+            
+            {/* Private Login PIN chip: Protected with Eye toggle */}
+            <div 
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-mono transition-colors ${
+                isDarkMode 
+                  ? 'bg-slate-900 border-slate-800 text-slate-200' 
+                  : 'bg-slate-100 border-slate-200 text-slate-700'
+              }`}
+              title="Your personal login PIN. Hidden from other players."
+            >
+              <span className={`text-[10px] uppercase font-sans font-semibold hidden sm:inline ${
+                isDarkMode ? 'text-slate-400' : 'text-slate-500'
+              }`}>
+                My PIN:
+              </span>
+              <span className="font-bold tracking-widest text-indigo-600 dark:text-indigo-400">
+                {showMyPin ? player?.pin : '••••'}
+              </span>
+              
+              <button 
+                onClick={() => setShowMyPin(!showMyPin)} 
+                className="p-1 hover:text-indigo-600 dark:hover:text-indigo-400 text-slate-400 transition-colors"
+                title={showMyPin ? "Hide PIN" : "Reveal PIN"}
+              >
+                {showMyPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+
+              <button 
+                onClick={handleCopyPin}
+                className="p-1 hover:text-indigo-600 dark:hover:text-indigo-400 text-slate-400 transition-colors"
+                title="Copy my PIN"
+              >
+                {copiedPin ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+
+            {/* Squad Action Button */}
             <button 
               onClick={onOpenTeam}
-              className="bg-cyan-600 hover:bg-cyan-500 text-black text-xs font-extrabold py-3 px-5 rounded-xl uppercase tracking-wider transition-all"
+              className="flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 md:py-2 md:px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all active:scale-95"
             >
-              {player?.teamCode ? 'Squad Room' : '➕ Join Squad'}
+              <Users className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">
+                {player?.teamCode ? (myTeamRank.teamName || 'Squad') : 'Squad'}
+              </span>
             </button>
-          </div>
-        </div>
 
-        {/* 🚀 ROUND PERFORMANCE REVIEW CARD (Triggers automatically when round ends) */}
-        {gameState?.status === 'leaderboard' && (
-          <div className="w-full mb-8">
-            <PlayerRoundReview player={player} gameState={gameState} />
-          </div>
-        )}
+            {/* Light / Dark Mode Toggle */}
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-xl border transition-colors ${
+                isDarkMode 
+                  ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
+                  : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+              }`}
+              title={isDarkMode ? "Switch to comfortable Light mode" : "Switch to Dark mode"}
+            >
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
 
-        {/* MODE SELECTOR TABS */}
-        <div className="w-full flex bg-gray-900 rounded-xl p-1.5 border border-gray-800 mb-8 max-w-md mx-auto md:mx-0">
-          <button 
-            onClick={() => setActiveTab('solo')} 
-            className={`flex-1 py-3 rounded-lg font-bold text-xs uppercase tracking-wider transition-all ${
-              activeTab === 'solo' ? 'bg-cyan-600 text-black shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Solo Standings
-          </button>
-          <button 
-            onClick={() => setActiveTab('team')} 
-            className={`flex-1 py-3 rounded-lg font-bold text-xs uppercase tracking-wider transition-all ${
-              activeTab === 'team' ? 'bg-cyan-600 text-black shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Team Standings
-          </button>
-        </div>
-
-        {/* ================= TAB 1: SOLO VIEW ================= */}
-        {activeTab === 'solo' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* Column 1: Personal Standing Card */}
-            <div className="md:col-span-1 flex flex-col gap-6">
-              <div className="w-full bg-gradient-to-br from-cyan-950 to-gray-900 border-2 border-cyan-500 p-6 rounded-2xl shadow-[0_0_25px_rgba(6,182,212,0.2)] flex md:flex-col justify-between items-center md:items-start">
-                <div className="mb-0 md:mb-4">
-                  <span className="text-xs text-cyan-400 uppercase tracking-widest font-bold">Your Rank</span>
-                  <h2 className="text-4xl md:text-6xl font-black text-white mt-2">#{myRank.rank}</h2>
-                </div>
-                <div className="text-right md:text-left">
-                  <span className="text-3xl md:text-5xl font-black text-cyan-300">{myRank.score}</span>
-                  <span className="text-xs text-gray-400 uppercase block tracking-widest mt-1">Total Points</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Column 2 & 3: Global Operative Standings List */}
-            <div className="md:col-span-2 bg-gray-900/60 border border-gray-800 p-6 rounded-2xl flex flex-col">
-              <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
-                <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">Operative Leaderboard</h3>
-                <span className="text-xs text-cyan-400 font-mono">{allPlayers.length} Active Players</span>
-              </div>
-              
-              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                {allPlayers.map((p, idx) => {
-                  const isMe = p.pin === player.pin;
-                  return (
-                    <div 
-                      key={p.id} 
-                      className={`flex justify-between items-center p-4 rounded-xl border text-sm transition-all ${
-                        isMe 
-                        ? 'bg-cyan-950/60 border-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.2)]' 
-                        : 'bg-black border-gray-800 text-gray-400 hover:border-gray-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className={`font-black text-base md:text-lg w-8 ${idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-gray-300' : idx === 2 ? 'text-amber-600' : 'text-gray-600'}`}>
-                          #{idx + 1}
-                        </span>
-                        <span className="font-bold text-base">
-                          {p.name} {isMe && <span className="text-xs text-cyan-400 ml-2 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800">(You)</span>}
-                        </span>
-                      </div>
-                      <div className="font-black text-lg text-white">
-                        {p.score || 0} <span className="text-xs text-gray-500 font-normal">pts</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* ================= TAB 2: TEAM VIEW ================= */}
-        {activeTab === 'team' && (
-          <div className="w-full">
-            {player?.teamCode ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                {/* Column 1: Squad Card */}
-                <div className="md:col-span-1 flex flex-col gap-6">
-                  <div className="w-full bg-gradient-to-br from-green-950 to-gray-900 border-2 border-green-500 p-6 rounded-2xl shadow-[0_0_25px_rgba(34,197,94,0.2)] flex md:flex-col justify-between items-center md:items-start">
-                    <div className="mb-0 md:mb-4">
-                      <span className="text-xs text-green-400 uppercase tracking-widest font-bold">Squad Rank</span>
-                      <h2 className="text-4xl md:text-6xl font-black text-white mt-2">#{myTeamRank.rank}</h2>
-                      <p className="text-sm text-gray-300 font-bold mt-1">{myTeamRank.teamName}</p>
-                    </div>
-                    <div className="text-right md:text-left">
-                      <span className="text-3xl md:text-5xl font-black text-green-300">{myTeamRank.score}</span>
-                      <span className="text-xs text-gray-400 uppercase block tracking-widest mt-1">Squad Pts</span>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={onOpenTeam}
-                    className="w-full bg-transparent border-2 border-green-600 text-green-400 font-bold py-3.5 rounded-xl hover:bg-green-950/40 transition-colors uppercase tracking-wider text-xs"
-                  >
-                   Manage Squad Room
-                  </button>
-                </div>
-
-                {/* Column 2 & 3: Global Squad Standings */}
-                <div className="md:col-span-2 bg-gray-900/60 border border-gray-800 p-6 rounded-2xl flex flex-col">
-                  <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
-                    <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">Team Squad Leaderboard</h3>
-                    <span className="text-xs text-green-400 font-mono">{allTeams.length} Registered Squads</span>
-                  </div>
-                  
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                    {allTeams.map((t, idx) => {
-                      const isMyTeam = t.teamCode === player.teamCode || t.id === player.teamCode;
-                      return (
-                        <div 
-                          key={t.id} 
-                          className={`flex justify-between items-center p-4 rounded-xl border text-sm transition-all ${
-                            isMyTeam 
-                            ? 'bg-green-950/60 border-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.2)]' 
-                            : 'bg-black border-gray-800 text-gray-400 hover:border-gray-700'
-                          }`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <span className={`font-black text-base md:text-lg w-8 ${idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-gray-300' : idx === 2 ? 'text-amber-600' : 'text-gray-600'}`}>
-                              #{idx + 1}
-                            </span>
-                            <span className="font-bold text-base">
-                              {t.teamName} {isMyTeam && <span className="text-xs text-green-400 ml-2 bg-green-950 px-2 py-0.5 rounded border border-green-800">(Your Squad)</span>}
-                            </span>
-                          </div>
-                          <div className="font-black text-lg text-white">
-                            {t.totalScore || 0} <span className="text-xs text-gray-500 font-normal">pts</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-              </div>
-            ) : (
-              <div className="w-full max-w-md mx-auto bg-gray-900 border border-yellow-600/50 p-8 rounded-2xl text-center my-10">
-                <p className="text-yellow-400 text-base font-bold mb-2">No Squad Linked</p>
-                <p className="text-gray-400 text-xs mb-6 leading-relaxed">You are currently Playing solo. Join or create a squad to compete on the team leaderboard!</p>
-                <button 
-                  onClick={onOpenTeam}
-                  className="bg-cyan-600 hover:bg-cyan-500 text-black text-xs font-extrabold py-3 px-6 rounded-xl uppercase tracking-wider transition-all"
-                >
-                  Access Team Roster
-                </button>
-              </div>
+            {/* Disconnect Option */}
+            {canDisconnect && (
+              <button 
+                onClick={() => setShowLogoutModal(true)}
+                className={`p-2 rounded-xl border transition-colors ${
+                  isDarkMode 
+                    ? 'border-transparent text-slate-400 hover:text-red-400 hover:bg-red-950/20' 
+                    : 'border-transparent text-slate-400 hover:text-red-600 hover:bg-red-50'
+                }`}
+                title="Disconnect"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             )}
           </div>
+        </div>
+      </header>
+
+      {/* MAIN CONTAINER */}
+      <main className="relative max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-6">
+        
+        {/* HERO PROFILE & SUMMARY CARD */}
+        <section className={`rounded-2xl p-5 md:p-6 border transition-all ${
+          isDarkMode 
+            ? 'bg-slate-900/60 border-slate-800' 
+            : 'bg-white border-slate-200/80 shadow-sm'
+        }`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            
+            {/* Player Avatar & Identity */}
+            <div className="flex items-center gap-3.5">
+              <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-tr ${getAvatarGradient(player?.name || 'Player')} flex items-center justify-center text-white font-bold text-lg md:text-xl shadow-md shrink-0`}>
+                {getInitials(player?.name || 'Player')}
+              </div>
+              
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl md:text-2xl font-bold tracking-tight">
+                    {player?.name || 'Player'}
+                  </h1>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                    Solo
+                  </span>
+                </div>
+                <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {player?.teamCode ? `Squad: ${myTeamRank.teamName}` : 'Competing individually'}
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Summary Pill on Mobile */}
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <div className={`text-xs px-3 py-1.5 rounded-xl border flex items-center gap-2 ${
+                isDarkMode ? 'bg-slate-800/70 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+              }`}>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Connected & Synced</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 3 CLEAN METRIC CARDS */}
+          <div className="grid grid-cols-3 gap-3 md:gap-4 mt-5">
+            
+            {/* 1. Solo Rank */}
+            <div className={`p-3.5 md:p-4 rounded-xl border transition-all ${
+              isDarkMode 
+                ? 'bg-slate-950/40 border-slate-800' 
+                : 'bg-slate-50 border-slate-200/80 hover:border-indigo-300'
+            }`}>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Solo Rank</span>
+                <Trophy className="w-4 h-4 text-amber-500" />
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl md:text-3xl font-extrabold tracking-tight">
+                  #{myRank.rank}
+                </span>
+                <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                  / {allPlayers.length || '-'}
+                </span>
+              </div>
+            </div>
+
+            {/* 2. Total Points */}
+            <div className={`p-3.5 md:p-4 rounded-xl border transition-all ${
+              isDarkMode 
+                ? 'bg-slate-950/40 border-slate-800' 
+                : 'bg-slate-50 border-slate-200/80 hover:border-emerald-300'
+            }`}>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Score</span>
+                <Zap className="w-4 h-4 text-emerald-500" />
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">
+                  {myRank.score}
+                </span>
+                <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>pts</span>
+              </div>
+            </div>
+
+            {/* 3. Squad Status */}
+            <div className={`p-3.5 md:p-4 rounded-xl border transition-all ${
+              isDarkMode 
+                ? 'bg-slate-950/40 border-slate-800' 
+                : 'bg-slate-50 border-slate-200/80 hover:border-indigo-300'
+            }`}>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Squad</span>
+                <Shield className="w-4 h-4 text-indigo-500" />
+              </div>
+              {player?.teamCode ? (
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl md:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight">
+                    #{myTeamRank.rank}
+                  </span>
+                  <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    / {allTeams.length || '-'}
+                  </span>
+                </div>
+              ) : (
+                <button 
+                  onClick={onOpenTeam}
+                  className="flex items-center gap-1 text-xs md:text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline mt-1"
+                >
+                  <span>Join</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ROUND REVIEW (If active) */}
+        {gameState?.status === 'leaderboard' && (
+          <section className="w-full">
+            <PlayerRoundReview player={player} gameState={gameState} />
+          </section>
         )}
 
-        {/* MOBILE FOOTER DISCONNECT */}
-       {/* <div className="w-full border-t border-gray-800 pt-6 text-center mt-12">
-          {canDisconnect ? (
-            <button onClick={logout} className="text-red-500 text-xs hover:text-red-400 underline decoration-red-900">
-              Disconnect Session
-            </button>
-          ) : (
-            <p className="text-gray-600 text-[10px] uppercase tracking-widest">
-              🔒 Session Lock Active (Admin Controlled)
-            </p>
-          )}
-        </div>*/}
+        {/* LEADERBOARD HEADER & SEARCH */}
+        <section className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            
+            {/* Segmented Switcher */}
+            <div className={`inline-flex p-1 rounded-xl border ${
+              isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-slate-200/70 border-slate-200'
+            }`}>
+              <button 
+                onClick={() => { setActiveTab('solo'); setSearchQuery(''); }}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'solo' 
+                    ? (isDarkMode ? 'bg-indigo-600 text-white' : 'bg-white text-slate-900 shadow-sm') 
+                    : (isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900')
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>Solo ({allPlayers.length})</span>
+              </button>
 
-      </div>
+              <button 
+                onClick={() => { setActiveTab('team'); setSearchQuery(''); }}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'team' 
+                    ? (isDarkMode ? 'bg-indigo-600 text-white' : 'bg-white text-slate-900 shadow-sm') 
+                    : (isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900')
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Squads ({allTeams.length})</span>
+              </button>
+            </div>
+
+            {/* Search Input & "My Rank" Jump */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-56">
+                <Search className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${
+                  isDarkMode ? 'text-slate-500' : 'text-slate-400'
+                }`} />
+                <input 
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={activeTab === 'solo' ? "Search player name..." : "Search squad name..."}
+                  className={`w-full text-xs pl-8 pr-3 py-2 rounded-xl outline-none border transition-colors ${
+                    isDarkMode 
+                      ? 'bg-slate-900 border-slate-800 focus:border-indigo-500 text-white placeholder-slate-500' 
+                      : 'bg-white border-slate-200 focus:border-indigo-500 text-slate-900 placeholder-slate-400 shadow-sm'
+                  }`}
+                />
+              </div>
+
+              {activeTab === 'solo' && myRank.rank !== '-' && (
+                <button
+                  onClick={handleScrollToMe}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all shrink-0 ${
+                    isDarkMode 
+                      ? 'bg-slate-900 border-slate-800 text-indigo-400 hover:bg-slate-800' 
+                      : 'bg-white border-slate-200 text-indigo-600 hover:bg-slate-50 shadow-sm'
+                  }`}
+                  title="Scroll to my position"
+                >
+                  <Target className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">My Rank</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ================= TAB 1: SOLO PLAYERS ================= */}
+          {activeTab === 'solo' && (
+            <div className="space-y-4">
+              
+              {/* TOP 3 PODIUM CARDS (No PIN shown anywhere!) */}
+              {!searchQuery && topThreePlayers.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {topThreePlayers.map((p, idx) => {
+                    const isMe = p.pin === player?.pin;
+                    const podiumStyles = [
+                      {
+                        medal: '🥇 1st Place',
+                        ring: isDarkMode ? 'border-amber-500/40 bg-amber-500/5' : 'border-amber-300 bg-amber-50/70',
+                        badge: isDarkMode ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-800 border-amber-200',
+                        rankText: 'text-amber-500'
+                      },
+                      {
+                        medal: '🥈 2nd Place',
+                        ring: isDarkMode ? 'border-slate-500/40 bg-slate-500/5' : 'border-slate-300 bg-slate-100/70',
+                        badge: isDarkMode ? 'bg-slate-500/20 text-slate-300 border-slate-500/30' : 'bg-slate-200 text-slate-800 border-slate-300',
+                        rankText: isDarkMode ? 'text-slate-300' : 'text-slate-600'
+                      },
+                      {
+                        medal: '🥉 3rd Place',
+                        ring: isDarkMode ? 'border-orange-500/40 bg-orange-500/5' : 'border-orange-200 bg-orange-50/70',
+                        badge: isDarkMode ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' : 'bg-orange-100 text-orange-800 border-orange-200',
+                        rankText: 'text-orange-500'
+                      }
+                    ][idx];
+
+                    return (
+                      <motion.div 
+                        layout
+                        key={p.id || p.pin}
+                        transition={{
+                          layout: { type: "spring", stiffness: 350, damping: 28 }
+                        }}
+                        className={`rounded-2xl border p-4 flex flex-col justify-between transition-all ${podiumStyles.ring} ${
+                          isMe ? (isDarkMode ? 'ring-2 ring-indigo-400' : 'ring-2 ring-indigo-500 shadow-md') : 'shadow-sm'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${podiumStyles.badge}`}>
+                            {podiumStyles.medal}
+                          </span>
+                          <span className={`text-xl font-black ${podiumStyles.rankText}`}>
+                            #{idx + 1}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${getAvatarGradient(p.name)} flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0`}>
+                            {getInitials(p.name)}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-bold truncate flex items-center gap-1.5">
+                              {p.name}
+                              {isMe && (
+                                <span className="text-[10px] bg-indigo-600 text-white font-semibold px-1.5 py-0.2 rounded">
+                                  You
+                                </span>
+                              )}
+                            </h4>
+                            <p className={`text-xs truncate ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                              {p.teamCode ? `Squad: ${p.teamCode}` : 'Solo'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className={`mt-3 pt-2.5 border-t flex items-center justify-between ${
+                          isDarkMode ? 'border-slate-800/80' : 'border-slate-200/80'
+                        }`}>
+                          <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Score</span>
+                          <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
+                            {p.score || 0} <span className="text-xs font-normal">pts</span>
+                          </span>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* CLEAN LEADERBOARD TABLE (Strictly hides secret login PINs) */}
+              <div className={`rounded-2xl border overflow-hidden transition-all ${
+                isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200/80 shadow-sm'
+              }`}>
+                <div className={`px-4 py-3 border-b flex items-center justify-between text-xs font-semibold ${
+                  isDarkMode ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500 bg-slate-50/50'
+                }`}>
+                  <div className="flex items-center gap-6">
+                    <span className="w-8 text-center">Rank</span>
+                    <span>Player</span>
+                  </div>
+                  <span>Score</span>
+                </div>
+
+                <div className={`divide-y max-h-[460px] overflow-y-auto ${
+                  isDarkMode ? 'divide-slate-800/60' : 'divide-slate-100'
+                }`}>
+                  {filteredPlayers.length === 0 ? (
+                    <div className={`p-8 text-center text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                      No players found matching "{searchQuery}".
+                    </div>
+                  ) : (
+                    filteredPlayers.map((p) => {
+                      const actualRank = allPlayers.findIndex(item => item.pin === p.pin) + 1;
+                      const isMe = p.pin === player?.pin;
+
+                      return (
+                        <motion.div 
+                          layout
+                          key={p.id || p.pin}
+                          ref={isMe ? myPlayerRowRef : null}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            layout: { type: "spring", stiffness: 350, damping: 28 },
+                            duration: 0.25
+                          }}
+                          className={`flex items-center justify-between px-4 py-3 text-sm transition-colors ${
+                            isMe 
+                              ? (isDarkMode 
+                                  ? 'bg-indigo-950/40 border-l-4 border-l-indigo-400 text-white' 
+                                  : 'bg-indigo-50/80 border-l-4 border-l-indigo-600 text-slate-900 font-medium')
+                              : (isDarkMode ? 'hover:bg-slate-800/40 text-slate-200' : 'hover:bg-slate-50 text-slate-700')
+                          }`}
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <span className={`w-8 text-center font-bold text-xs md:text-sm shrink-0 ${
+                              actualRank === 1 ? 'text-amber-500 font-extrabold' :
+                              actualRank === 2 ? (isDarkMode ? 'text-slate-300' : 'text-slate-600') :
+                              actualRank === 3 ? 'text-orange-500 font-extrabold' :
+                              (isDarkMode ? 'text-slate-500' : 'text-slate-400')
+                            }`}>
+                              #{actualRank}
+                            </span>
+
+                            <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${getAvatarGradient(p.name)} flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0`}>
+                              {getInitials(p.name)}
+                            </div>
+                            
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span className="font-semibold truncate">
+                                  {p.name}
+                                </span>
+                                {isMe && (
+                                  <span className="text-[10px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded shrink-0">
+                                    YOU
+                                  </span>
+                                )}
+                              </div>
+                              <span className={`text-[11px] truncate block ${
+                                isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                              }`}>
+                                {p.teamCode ? `Squad: ${p.teamCode}` : 'Solo Player'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-right pl-3 shrink-0">
+                            <span className="text-sm md:text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                              {p.score || 0}
+                            </span>
+                            <span className={`text-xs ml-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>pts</span>
+                          </div>
+                        </motion.div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ================= TAB 2: SQUADS ================= */}
+          {activeTab === 'team' && (
+            <div className="space-y-4">
+              
+              {/* If user has no squad, display clean invitation card */}
+              {!player?.teamCode && (
+                <div className={`p-4 md:p-5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${
+                  isDarkMode 
+                    ? 'bg-slate-900 border-slate-800' 
+                    : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <div className="flex items-center gap-3 text-center sm:text-left">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold">Competing Individually</h4>
+                      <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Join or create a team squad to battle together on the Squad board.
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={onOpenTeam}
+                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-4 py-2 rounded-xl transition-all shadow-sm"
+                  >
+                    Enter Squad Lobby
+                  </button>
+                </div>
+              )}
+
+              {/* Squad Podium */}
+              {!searchQuery && topThreeTeams.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {topThreeTeams.map((t, idx) => {
+                    const isMyTeam = t.teamCode === player?.teamCode || t.id === player?.teamCode;
+                    const podiumStyles = [
+                      {
+                        medal: '🥇 1st Squad',
+                        ring: isDarkMode ? 'border-amber-500/40 bg-amber-500/5' : 'border-amber-300 bg-amber-50/70',
+                        badge: isDarkMode ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-800 border-amber-200',
+                        rankText: 'text-amber-500'
+                      },
+                      {
+                        medal: '🥈 2nd Squad',
+                        ring: isDarkMode ? 'border-slate-500/40 bg-slate-500/5' : 'border-slate-300 bg-slate-100/70',
+                        badge: isDarkMode ? 'bg-slate-500/20 text-slate-300 border-slate-500/30' : 'bg-slate-200 text-slate-800 border-slate-300',
+                        rankText: isDarkMode ? 'text-slate-300' : 'text-slate-600'
+                      },
+                      {
+                        medal: '🥉 3rd Squad',
+                        ring: isDarkMode ? 'border-orange-500/40 bg-orange-500/5' : 'border-orange-200 bg-orange-50/70',
+                        badge: isDarkMode ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' : 'bg-orange-100 text-orange-800 border-orange-200',
+                        rankText: 'text-orange-500'
+                      }
+                    ][idx];
+
+                    return (
+                      <motion.div 
+                        layout
+                        key={t.id || t.teamCode}
+                        transition={{
+                          layout: { type: "spring", stiffness: 350, damping: 28 }
+                        }}
+                        className={`rounded-2xl border p-4 flex flex-col justify-between transition-all ${podiumStyles.ring} ${
+                          isMyTeam ? (isDarkMode ? 'ring-2 ring-emerald-400' : 'ring-2 ring-emerald-500 shadow-md') : 'shadow-sm'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${podiumStyles.badge}`}>
+                            {podiumStyles.medal}
+                          </span>
+                          <span className={`text-xl font-black ${podiumStyles.rankText}`}>
+                            #{idx + 1}
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-bold truncate flex items-center gap-1.5">
+                            {t.teamName}
+                            {isMyTeam && (
+                              <span className="text-[10px] bg-emerald-600 text-white font-semibold px-1.5 py-0.2 rounded">
+                                Your Squad
+                              </span>
+                            )}
+                          </h4>
+                          <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                            Team Code: {t.teamCode || t.id}
+                          </p>
+                        </div>
+
+                        <div className={`mt-3 pt-2.5 border-t flex items-center justify-between ${
+                          isDarkMode ? 'border-slate-800/80' : 'border-slate-200/80'
+                        }`}>
+                          <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Combined Score</span>
+                          <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
+                            {t.totalScore || 0} <span className="text-xs font-normal">pts</span>
+                          </span>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Complete Squads Table */}
+              <div className={`rounded-2xl border overflow-hidden transition-all ${
+                isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200/80 shadow-sm'
+              }`}>
+                <div className={`px-4 py-3 border-b flex items-center justify-between text-xs font-semibold ${
+                  isDarkMode ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500 bg-slate-50/50'
+                }`}>
+                  <div className="flex items-center gap-6">
+                    <span className="w-8 text-center">Rank</span>
+                    <span>Squad Name</span>
+                  </div>
+                  <span>Combined Score</span>
+                </div>
+
+                <div className={`divide-y max-h-[460px] overflow-y-auto ${
+                  isDarkMode ? 'divide-slate-800/60' : 'divide-slate-100'
+                }`}>
+                  {filteredTeams.length === 0 ? (
+                    <div className={`p-8 text-center text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {allTeams.length === 0 ? 'No squads registered yet.' : `No squads found matching "${searchQuery}".`}
+                    </div>
+                  ) : (
+                    filteredTeams.map((t) => {
+                      const actualRank = allTeams.findIndex(item => item.id === t.id || item.teamCode === t.teamCode) + 1;
+                      const isMyTeam = t.teamCode === player?.teamCode || t.id === player?.teamCode;
+
+                      return (
+                        <motion.div 
+                          layout
+                          key={t.id || t.teamCode}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            layout: { type: "spring", stiffness: 350, damping: 28 },
+                            duration: 0.25
+                          }}
+                          className={`flex items-center justify-between px-4 py-3 text-sm transition-colors ${
+                            isMyTeam 
+                              ? (isDarkMode 
+                                  ? 'bg-emerald-950/40 border-l-4 border-l-emerald-400 text-white' 
+                                  : 'bg-emerald-50/80 border-l-4 border-l-emerald-600 text-slate-900 font-medium')
+                              : (isDarkMode ? 'hover:bg-slate-800/40 text-slate-200' : 'hover:bg-slate-50 text-slate-700')
+                          }`}
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <span className={`w-8 text-center font-bold text-xs md:text-sm shrink-0 ${
+                              actualRank === 1 ? 'text-amber-500 font-extrabold' :
+                              actualRank === 2 ? (isDarkMode ? 'text-slate-300' : 'text-slate-600') :
+                              actualRank === 3 ? 'text-orange-500 font-extrabold' :
+                              (isDarkMode ? 'text-slate-500' : 'text-slate-400')
+                            }`}>
+                              #{actualRank}
+                            </span>
+                            
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span className="font-semibold truncate">
+                                  {t.teamName}
+                                </span>
+                                {isMyTeam && (
+                                  <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded shrink-0">
+                                    YOUR SQUAD
+                                  </span>
+                                )}
+                              </div>
+                              <span className={`text-[11px] truncate block ${
+                                isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                              }`}>
+                                Code: {t.teamCode || t.id}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-right pl-3 shrink-0">
+                            <span className="text-sm md:text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                              {t.totalScore || 0}
+                            </span>
+                            <span className={`text-xs ml-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>pts</span>
+                          </div>
+                        </motion.div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+      </main>
+
+      {/* DISCONNECT CONFIRMATION MODAL */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={`border rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-xl ${
+            isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}>
+            <div className="w-11 h-11 rounded-full bg-red-500/10 text-red-600 flex items-center justify-center mx-auto">
+              <LogOut className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold">Disconnect Session?</h3>
+              <p className={`text-xs mt-1 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Your score and rank are saved under your PIN. You can reconnect anytime.
+              </p>
+            </div>
+            <div className="flex gap-2.5 pt-1">
+              <button 
+                onClick={() => setShowLogoutModal(false)}
+                className={`flex-1 text-xs font-semibold py-2.5 rounded-xl border transition-colors ${
+                  isDarkMode 
+                    ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' 
+                    : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  logout();
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors shadow-sm"
+              >
+                Disconnect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

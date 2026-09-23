@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../../../config/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
 export default function PlayerRoundReview({ player }) {
   const [lastAnswer, setLastAnswer] = useState(null);
@@ -11,17 +12,15 @@ export default function PlayerRoundReview({ player }) {
       try {
         setLoading(true);
         const answersRef = collection(db, 'events', 'samarambh', 'answers');
-        // Query by player pin only (avoids needing a Firestore composite index)
         const q = query(answersRef, where("pin", "==", player.pin));
         
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {
           let submissions = [];
-          snapshot.forEach((doc) => {
-            submissions.push({ id: doc.id, ...doc.data() });
+          snapshot.forEach((docSnap) => {
+            submissions.push({ id: docSnap.id, ...docSnap.data() });
           });
 
-          // Sort locally in JavaScript by timestamp descending (newest submission first)
           submissions.sort((a, b) => {
             const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
             const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
@@ -42,17 +41,19 @@ export default function PlayerRoundReview({ player }) {
 
   if (loading) {
     return (
-      <div className="w-full bg-gray-900 border border-gray-700 p-5 rounded-xl text-center my-4 animate-pulse">
-        <p className="text-xs text-gray-400 uppercase tracking-widest">Crunching threat telemetry...</p>
+      <div className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl text-center my-3 animate-pulse">
+        <p className="text-xs text-slate-500 font-medium">Loading round results...</p>
       </div>
     );
   }
 
   if (!lastAnswer) {
     return (
-      <div className="w-full bg-gray-900 border border-yellow-600/50 p-5 rounded-xl text-center my-4">
-        <p className="text-yellow-400 font-bold text-xs uppercase tracking-wider">⚠️ No Transmission Recorded</p>
-        <p className="text-gray-400 text-xs mt-1">You did not lock a verdict for this challenge before round closure.</p>
+      <div className="w-full bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 p-4 rounded-xl text-center my-3">
+        <div className="flex items-center justify-center gap-1.5 text-amber-700 dark:text-amber-400 font-semibold text-xs">
+          <AlertCircle className="w-4 h-4" />
+          <span>No answer recorded for this question</span>
+        </div>
       </div>
     );
   }
@@ -60,38 +61,51 @@ export default function PlayerRoundReview({ player }) {
   const isPhishingRound = lastAnswer.questionType === 'photo_recognize';
 
   return (
-    <div className={`w-full border-2 p-5 rounded-xl my-4 text-left transition-all ${
+    <div className={`w-full border rounded-2xl p-4 md:p-5 my-3 text-left transition-all ${
       lastAnswer.isCorrect 
-        ? 'bg-green-950/30 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.15)]' 
-        : 'bg-red-950/30 border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.15)]'
+        ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 shadow-sm' 
+        : 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 shadow-sm'
     }`}>
-      <div className="flex justify-between items-center mb-3">
-        <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Result of This Question</span>
-        <span className={`text-xs font-black px-2.5 py-1 rounded uppercase tracking-wider ${
-          lastAnswer.isCorrect ? 'bg-green-600 text-black' : 'bg-red-600 text-white'
+      <div className="flex justify-between items-center mb-2.5">
+        <div className="flex items-center gap-1.5">
+          {lastAnswer.isCorrect ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          ) : (
+            <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+          )}
+          <span className={`text-xs font-bold uppercase tracking-wider ${
+            lastAnswer.isCorrect 
+              ? 'text-emerald-700 dark:text-emerald-300' 
+              : 'text-rose-700 dark:text-rose-300'
+          }`}>
+            {lastAnswer.isCorrect ? 'Correct Answer' : 'Incorrect'}
+          </span>
+        </div>
+
+        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+          lastAnswer.isCorrect 
+            ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-200 dark:border-emerald-700' 
+            : 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/50 dark:text-rose-200 dark:border-rose-700'
         }`}>
-          {lastAnswer.isCorrect ? 'CORRECT' : 'INCORRECT'}
+          Round Review
         </span>
       </div>
 
-      <p className="text-xs text-gray-300 font-bold mb-3">
-        <span className="text-gray-500">Mission:</span> {lastAnswer.questionText}
+      <p className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
+        {lastAnswer.questionText}
       </p>
 
-      <div className="bg-black/60 border border-gray-800 p-3 rounded-lg text-xs space-y-2 mb-3">
-        <div className="flex justify-between text-gray-400">
-          <span>Your Answer:</span>
-          <span className="text-white font-bold">{lastAnswer.submittedAnswer}</span>
-        </div>
+      <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs flex justify-between items-center">
+        <span className="text-slate-500 dark:text-slate-400">Your Answer:</span>
+        <span className="font-bold text-slate-900 dark:text-white">{lastAnswer.submittedAnswer}</span>
       </div>
 
-      {/* 🧠 OPERATIVE BRIEFING EXPLANATION */}
       {isPhishingRound && lastAnswer.explanation && (
-        <div className="bg-cyan-950/40 border border-cyan-800/60 p-3.5 rounded-lg mt-3">
-          <p className="text-[10px] uppercase tracking-widest text-cyan-400 font-extrabold mb-1">
-          Explanation & Threat Analysis:
+        <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 p-3 rounded-xl mt-3 text-xs">
+          <p className="font-semibold text-indigo-900 dark:text-indigo-300 mb-1">
+            Explanation:
           </p>
-          <p className="text-xs text-gray-300 leading-relaxed font-sans">
+          <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
             {lastAnswer.explanation}
           </p>
         </div>

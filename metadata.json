@@ -1,0 +1,6 @@
+{
+  "name": "TechArena",
+  "description": "Real-Time Multi-Mode Competitive Quiz Platform for tech events with Solo and Team play, MCQs, Terminal Hacks, and latency-based scoring.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

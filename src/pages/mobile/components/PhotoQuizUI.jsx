@@ -1,36 +1,74 @@
 import React, { useState, useEffect } from 'react';
-import { AuthContext } from '../../../context/AuthContext';
-import { GameContext } from '../../../context/GameContext';
 import { db } from '../../../config/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { saveToOfflineQueue, flushOfflineQueue } from '../../../utils/offlineSync';
+import { 
+  Check, 
+  CheckCircle2, 
+  Clock, 
+  Lock, 
+  Sun, 
+  Moon, 
+  Sparkles, 
+  Maximize2, 
+  X, 
+  AlertCircle 
+} from 'lucide-react';
+import StageCountdown from '../../../components/StageCountdown';
 
-export default function PhotoQuizUI({ player, gameState, setHasSubmitted }) {
+const OPTION_BADGES = [
+  { label: 'A', bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/60' },
+  { label: 'B', bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/60' },
+  { label: 'C', bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/60' },
+  { label: 'D', bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/60' }
+];
+
+export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setParentSubmitted }) {
   const [selected, setSelected] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lockedAnswer, setLockedAnswer] = useState(null);
   const [activeImageZoom, setActiveImageZoom] = useState(null);
-  
+  const [questionStartTime, setQuestionStartTime] = useState(null);
+
+  // Eye-friendly theme
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('techarena_theme') === 'dark';
+  });
+
+  const toggleTheme = () => {
+    setIsDarkMode(prev => {
+      const next = !prev;
+      localStorage.setItem('techarena_theme', next ? 'dark' : 'light');
+      return next;
+    });
+  };
+
   const payload = gameState?.activeQuestion?.payload || {};
   const questionId = gameState?.activeQuestion?.id;
+  const totalTimeLimit = gameState?.activeQuestion?.timeLimit || 20;
 
-  // 🛡️ REFRESH BUG FIX
+  // Restore prior submission check from cache if page was refreshed
   useEffect(() => {
     try {
       const localKey = `submitted_${player.pin}_${questionId}`;
       if (localStorage.getItem(localKey) === 'true') {
-        setHasSubmitted(true);
+        const timer = setTimeout(() => {
+          if (setParentSubmitted) setParentSubmitted(true);
+          setLockedAnswer('Recorded Earlier');
+        }, 0);
+        return () => clearTimeout(timer);
       }
     } catch (err) {
-      console.error("Error checking submission cache:", err);
+      console.warn("Storage check failed:", err);
     }
-  }, [questionId, player.pin, setHasSubmitted]);
+  }, [questionId, player.pin, setParentSubmitted]);
 
-  // ⏱️ Synchronized 5s Setup Countdown + Question Timer
+  // Synchronized Timers
   const [setupCountdown, setSetupCountdown] = useState(5);
-  const [questionTimer, setQuestionTimer] = useState(gameState?.activeQuestion?.timeLimit || 20);
+  const [questionTimer, setQuestionTimer] = useState(totalTimeLimit);
 
   useEffect(() => {
     if (!gameState?.updatedAt) return;
-    const timeLimit = gameState.activeQuestion?.timeLimit || 20;
     const updatedAtMs = gameState.updatedAt.toMillis ? gameState.updatedAt.toMillis() : Date.now();
 
     const updateTimers = () => {
@@ -39,11 +77,11 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted }) {
       
       if (remainingSetup > 0) {
         setSetupCountdown(remainingSetup);
-        setQuestionTimer(timeLimit);
+        setQuestionTimer(totalTimeLimit);
       } else {
         setSetupCountdown(0);
         const activeElapsed = elapsedSeconds - 5;
-        const remainingQuestionTime = timeLimit - activeElapsed;
+        const remainingQuestionTime = totalTimeLimit - activeElapsed;
         setQuestionTimer(remainingQuestionTime <= 0 ? 0 : remainingQuestionTime);
       }
     };
@@ -51,12 +89,15 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted }) {
     updateTimers();
     const interval = setInterval(updateTimers, 1000);
     return () => clearInterval(interval);
-  }, [gameState?.updatedAt]);
+  }, [gameState?.updatedAt, totalTimeLimit]);
 
-  const [questionStartTime, setQuestionStartTime] = useState(null);
   useEffect(() => {
     if (setupCountdown === 0 && !questionStartTime) {
-      setQuestionStartTime(Date.now());
+      const now = Date.now();
+      const timer = setTimeout(() => {
+        setQuestionStartTime(now);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [setupCountdown, questionStartTime]);
 
@@ -64,36 +105,62 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted }) {
     if (!selected || questionTimer <= 0 || isSubmitting) return;
     setIsSubmitting(true);
 
+    const isCorrect = selected.trim().toLowerCase() === (payload?.correct || '').trim().toLowerCase();
+    const timeTaken = questionStartTime ? (Date.now() - questionStartTime) / 1000 : 0;
+    const qId = questionId || 'photo_q';
+
+    const answerRecord = {
+      pin: player.pin,
+      name: player.name,
+      teamCode: player.teamCode || null,
+      gameMode: gameState?.gameMode || 'solo',
+      questionId: qId,
+      questionType: gameState?.activeQuestion?.type || 'photo_recognize',
+      questionText: payload?.prompt || 'Threat Analysis Challenge',
+      submittedAnswer: selected.trim(),
+      isCorrect: isCorrect,
+      explanation: payload?.explanation || '',
+      timeTaken: Number(timeTaken.toFixed(1)),
+      timestamp: serverTimestamp()
+    };
+
     try {
-      const isCorrect = selected.trim().toLowerCase() === (payload?.correct || '').trim().toLowerCase();
-      const timeTaken = questionStartTime ? (Date.now() - questionStartTime) / 1000 : 0;
+      localStorage.setItem(`answer_${player.pin}_${qId}`, JSON.stringify({
+        answer: selected.trim(),
+        isCorrect
+      }));
+      localStorage.setItem(`submitted_${player.pin}_${qId}`, 'true');
+    } catch (e) {
+      console.warn("Local storage write error:", e);
+    }
 
-      const answerRecord = {
-        pin: player.pin,
-        name: player.name,
-        teamCode: player.teamCode || null,
-        gameMode: gameState.gameMode || 'solo',
-        questionId: questionId,
-        questionType: gameState?.activeQuestion?.type || 'photo_recognize',
-        questionText: payload?.prompt || 'Threat Analysis Challenge',
-        submittedAnswer: selected.trim(),
-        isCorrect: isCorrect,
-        explanation: payload?.explanation || '', // 🧠 Bundle explanation directly into the answer record!
-        timeTaken: Number(timeTaken.toFixed(1)),
-        timestamp: serverTimestamp()
-      };
+    if (navigator.vibrate) navigator.vibrate(50);
+    setLockedAnswer(selected);
+    if (setParentSubmitted) setParentSubmitted(true);
 
+    try {
       await addDoc(collection(db, 'events', 'samarambh', 'answers'), answerRecord);
-      localStorage.setItem(`submitted_${player.pin}_${questionId}`, 'true');
-
-      if (navigator.vibrate) navigator.vibrate(50);
-      setHasSubmitted(true);
     } catch (error) {
-      console.error("Failed to submit analysis:", error);
+      console.warn("Direct photo submission deferred, queuing offline:", error.message);
+      saveToOfflineQueue(answerRecord);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    const handleOnline = () => {
+      flushOfflineQueue(async (item) => {
+        await addDoc(collection(db, 'events', 'samarambh', 'answers'), {
+          ...item,
+          timestamp: serverTimestamp()
+        });
+      });
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
 
   const images = payload.images || (payload.imageUrl ? [payload.imageUrl] : []);
   
@@ -104,107 +171,347 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted }) {
     optionsList = payload.options.split(',').map(o => o.trim()).filter(Boolean);
   }
 
+  // 1. COUNTDOWN STATE
   if (setupCountdown > 0) {
     return (
-      <div className="min-h-screen bg-black text-yellow-400 font-mono flex flex-col items-center justify-center p-6 text-center">
-        <div className="text-8xl font-black mb-6 animate-pulse">{setupCountdown}</div>
-        <h2 className="text-2xl font-bold text-white uppercase tracking-wider mb-2">Analyzing Threat Payload...</h2>
-        <p className="text-gray-500 text-sm">Inspecting phishing artifacts across network...</p>
-        <div className="mt-8 border border-gray-800 bg-gray-900 p-4 rounded w-full max-w-xs text-xs text-gray-400 uppercase">
-          Answering Window: {gameState?.activeQuestion?.timeLimit || 20}s
+      <StageCountdown
+        seconds={setupCountdown}
+        maxSeconds={5}
+        mode="mobile"
+        isDarkMode={isDarkMode}
+        onToggleTheme={toggleTheme}
+        badgeText="Inspection Loading"
+        title="Inspect the Artifact!"
+        subtitle="Carefully review the screenshot or image artifacts to determine the verdict."
+        timeWindow={totalTimeLimit}
+        brandName="Image Analysis"
+      />
+    );
+  }
+
+  // 2. LOCKED STATE
+  if (lockedAnswer) {
+    return (
+      <div className={`min-h-screen flex flex-col justify-between p-6 transition-colors duration-200 ${
+        isDarkMode ? 'bg-[#0b0f19] text-white' : 'bg-slate-50 text-slate-900'
+      }`}>
+        <div className="max-w-md w-full mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <img 
+              src="/images/logo.jpg" 
+              onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
+              alt="TechArena" 
+              className={`h-9 w-9 rounded-xl object-contain p-1 border shadow-sm ${
+                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+              }`}
+            />
+            <span className="font-extrabold text-sm tracking-tight">
+              Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+            </span>
+          </div>
+
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
+            questionTimer > 5 
+              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800' 
+              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800'
+          }`}>
+            <Clock className="w-3.5 h-3.5" />
+            <span>{questionTimer}s remaining</span>
+          </div>
+        </div>
+
+        <div className="max-w-md w-full mx-auto text-center py-6">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mx-auto mb-4 shadow-sm">
+            <CheckCircle2 className="w-8 h-8" />
+          </div>
+
+          <h1 className="text-2xl font-bold tracking-tight mb-1">
+            Verdict Submitted!
+          </h1>
+          <p className={`text-xs mb-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            Your inspection analysis is locked. Results will reveal once time expires.
+          </p>
+
+          <div className={`p-4 rounded-2xl border text-left space-y-2 mb-4 ${
+            isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+          }`}>
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+              Submitted Verdict
+            </span>
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                ✓
+              </div>
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                {lockedAnswer}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-center text-[11px] text-slate-400 pb-2">
+          Samarambh 4.0 · Live Stage
         </div>
       </div>
     );
   }
 
+  // 3. ACTIVE INSPECTION
+  const timePercentage = Math.max(0, Math.min(100, (questionTimer / totalTimeLimit) * 100));
+  const isTimeCritical = questionTimer <= 5;
+  const isTimeWarning = questionTimer <= 10 && questionTimer > 5;
+
   return (
-    <div className="min-h-screen bg-black text-green-400 font-mono flex flex-col p-6 pt-8 items-center justify-center">
-      <div className="w-full max-w-md mx-auto bg-gray-900 border border-cyan-500 p-6 rounded-2xl flex flex-col">
-        
-        <div className="flex justify-between items-center mb-6 bg-black p-3 rounded border border-gray-800">
-          <span className="text-red-500 font-bold text-xs uppercase tracking-widest animate-pulse">🔴 LIVE THREAT</span>
-          <span className={`font-bold text-sm ${questionTimer <= 5 ? 'text-red-500 animate-bounce' : 'text-yellow-400'}`}>
-            ⏳ {questionTimer}s left
-          </span>
-          <span className="text-gray-400 text-xs uppercase">{gameState?.gameMode}</span>
-        </div>
-
-        {images.length > 0 && (
-          <div className={`w-full grid ${images.length > 1 ? 'grid-cols-2 gap-2' : 'grid-cols-1'} mb-4`}>
-            {images.map((imgUrl, index) => (
-              <div 
-                key={index} 
-                onClick={() => setActiveImageZoom(imgUrl)}
-                className="h-36 bg-black rounded-lg border border-gray-700 overflow-hidden flex items-center justify-center p-1 relative cursor-pointer group hover:border-cyan-400 transition-colors"
-              >
-                <span className="absolute top-1 left-1 bg-black/70 text-[10px] text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-800 z-10">
-                  Ref #{index + 1} 🔍 Zoom
-                </span>
-                <img src={imgUrl} alt={`Threat Artifact ${index + 1}`} className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" />
-              </div>
-            ))}
-          </div>
-        )}
-
-        <h1 className="text-sm font-bold text-white mb-6 border-l-4 border-cyan-500 pl-4 leading-relaxed">
-          {payload?.prompt || 'Examine artifact and identify anomaly:'}
-        </h1>
-        
-        {optionsList.length > 0 ? (
-          <div className="space-y-3">
-            {optionsList.map((opt, idx) => (
-              <button 
-                key={idx}
-                onClick={() => setSelected(opt)}
-                disabled={questionTimer <= 0}
-                className={`w-full p-3.5 rounded-xl border-2 text-left text-xs font-bold transition-all duration-200 uppercase tracking-wider flex items-center justify-between ${
-                  selected === opt 
-                  ? 'bg-cyan-900 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.4)]' 
-                  : 'bg-black border-gray-700 text-gray-400 hover:border-cyan-500 hover:text-green-400'
-                }`}
-              >
-                <span><span className="text-gray-600 mr-3">[{String.fromCharCode(65 + idx)}]</span> {opt}</span>
-                <span className="text-[10px] opacity-60">{selected === opt ? 'SELECTED' : 'SELECT'}</span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="w-full bg-red-950/40 border border-red-600 p-4 rounded-xl text-center">
-            <p className="text-red-400 text-xs font-bold">⚠️ Configuration Error: No options loaded for this question block in CMS.</p>
-          </div>
-        )}
-
-        {selected && (
-          <div className="mt-6">
-            <button 
-              onClick={handleLockVerdict}
-              disabled={isSubmitting || questionTimer <= 0}
-              className="w-full bg-cyan-500 hover:bg-cyan-400 disabled:bg-gray-600 text-black font-extrabold py-4 rounded-xl uppercase tracking-widest text-xs transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)]"
-            >
-              {isSubmitting ? 'Transmitting Telemetry...' : '🔒 Lock Final Verdict'}
-            </button>
-          </div>
-        )}
-
+    <div className={`min-h-screen flex flex-col justify-between transition-colors duration-200 ${
+      isDarkMode ? 'bg-[#0b0f19] text-white' : 'bg-slate-50 text-slate-900'
+    }`}>
+      
+      {/* Dynamic Animated Progress Bar */}
+      <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 overflow-hidden sticky top-0 z-40">
+        <div 
+          className={`h-full transition-all duration-1000 ease-linear ${
+            isTimeCritical 
+              ? 'bg-rose-500' 
+              : isTimeWarning 
+                ? 'bg-amber-500' 
+                : 'bg-indigo-600 dark:bg-indigo-400'
+          }`}
+          style={{ width: `${timePercentage}%` }}
+        />
       </div>
 
+      {/* Header */}
+      <header className={`px-4 py-3 border-b backdrop-blur-md sticky top-1.5 z-30 transition-colors ${
+        isDarkMode ? 'bg-[#0b0f19]/90 border-slate-800' : 'bg-white/90 border-slate-200/80 shadow-sm'
+      }`}>
+        <div className="max-w-md mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <img 
+              src="/images/logo.jpg" 
+              onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
+              alt="TechArena" 
+              className={`h-9 w-9 rounded-xl object-contain p-1 border shadow-sm ${
+                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+              }`}
+            />
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-sm tracking-tight">
+                  Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800">
+                  Inspect
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Visual Challenge
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-colors ${
+              isTimeCritical 
+                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-800 animate-pulse' 
+                : isTimeWarning
+                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800'
+                  : isDarkMode
+                    ? 'bg-slate-900 border-slate-800 text-indigo-400'
+                    : 'bg-indigo-50 border-indigo-200 text-indigo-700'
+            }`}>
+              <Clock className="w-3.5 h-3.5" />
+              <span>{questionTimer}s</span>
+            </div>
+
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-xl border transition-colors ${
+                isDarkMode 
+                  ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
+              }`}
+              title="Toggle theme"
+            >
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Body */}
+      <main className="max-w-md w-full mx-auto px-4 py-5 flex-1 flex flex-col justify-between">
+        <div className="space-y-4">
+          
+          {/* Artifact Preview Card */}
+          {images.length > 0 && (
+            <div className={`rounded-2xl border p-3 transition-colors ${
+              isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+            }`}>
+              <div className="flex justify-between items-center mb-2 px-1 text-xs">
+                <span className="font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">
+                  Artifacts to Inspect ({images.length})
+                </span>
+                <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium flex items-center gap-1">
+                  <Maximize2 className="w-3 h-3" /> Tap to expand
+                </span>
+              </div>
+
+              <div className={`grid ${images.length > 1 ? 'grid-cols-2 gap-2' : 'grid-cols-1'} overflow-hidden rounded-xl`}>
+                {images.map((imgUrl, index) => (
+                  <button 
+                    key={index} 
+                    type="button"
+                    onClick={() => setActiveImageZoom(imgUrl)}
+                    className="relative group h-40 w-full bg-slate-950/20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-all cursor-zoom-in"
+                  >
+                    <img 
+                      src={imgUrl} 
+                      alt={`Artifact ${index + 1}`} 
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="p-1.5 rounded-lg bg-white/90 dark:bg-slate-900/90 text-slate-800 dark:text-white shadow-sm">
+                        <Maximize2 className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Question / Prompt */}
+          <div className={`p-4 md:p-5 rounded-2xl border transition-all ${
+            isDarkMode 
+              ? 'bg-slate-900/70 border-slate-800' 
+              : 'bg-white border-slate-200/90 shadow-sm'
+          }`}>
+            <span className={`font-semibold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-md mb-2 inline-block ${
+              isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+            }`}>
+              Analysis Prompt
+            </span>
+
+            <h1 className="text-sm md:text-base font-bold leading-relaxed text-slate-900 dark:text-white">
+              {payload?.prompt || 'Examine the artifact and select the correct verdict:'}
+            </h1>
+          </div>
+
+          {/* Options */}
+          {optionsList.length > 0 ? (
+            <div className="space-y-2.5">
+              {optionsList.map((opt, idx) => {
+                const isSelected = selected === opt;
+                const badge = OPTION_BADGES[idx % OPTION_BADGES.length];
+
+                return (
+                  <button 
+                    key={idx}
+                    onClick={() => setSelected(opt)}
+                    disabled={isSubmitting || questionTimer <= 0}
+                    className={`w-full p-3.5 rounded-xl border text-left transition-all flex items-center justify-between group active:scale-[0.99] min-h-[52px] ${
+                      isSelected 
+                        ? (isDarkMode 
+                            ? 'bg-indigo-950/40 border-indigo-500 ring-2 ring-indigo-500/50 text-white' 
+                            : 'bg-indigo-50/80 border-indigo-600 ring-2 ring-indigo-500/30 text-indigo-950 shadow-sm')
+                        : (isDarkMode 
+                            ? 'bg-slate-900/60 border-slate-800 text-slate-200 hover:border-slate-700 hover:bg-slate-900' 
+                            : 'bg-white border-slate-200 text-slate-800 hover:border-indigo-300 hover:bg-slate-50/80 shadow-sm')
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 pr-2">
+                      <span className={`w-7 h-7 rounded-lg border flex items-center justify-center text-xs font-bold shrink-0 transition-transform ${
+                        isSelected 
+                          ? 'bg-indigo-600 text-white border-indigo-600 scale-105' 
+                          : badge.bg
+                      }`}>
+                        {badge.label}
+                      </span>
+                      <span className="text-sm font-medium leading-snug break-words">
+                        {opt}
+                      </span>
+                    </div>
+
+                    <div className="shrink-0 pl-1">
+                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                        isSelected 
+                          ? 'bg-indigo-600 border-indigo-600 text-white' 
+                          : (isDarkMode ? 'border-slate-700' : 'border-slate-300')
+                      }`}>
+                        {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl text-center">
+              <AlertCircle className="w-5 h-5 text-amber-600 mx-auto mb-1" />
+              <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                No predefined choices found for this challenge.
+              </p>
+            </div>
+          )}
+
+        </div>
+
+        {/* Lock Button */}
+        <div className="pt-5 pb-3">
+          <button 
+            onClick={handleLockVerdict}
+            disabled={!selected || isSubmitting || questionTimer <= 0}
+            className={`w-full py-3.5 px-4 rounded-xl font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2 shadow-sm ${
+              selected && questionTimer > 0 && !isSubmitting
+                ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/25 active:scale-95 cursor-pointer'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-transparent'
+            }`}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Recording Verdict...</span>
+              </>
+            ) : selected ? (
+              <>
+                <Lock className="w-4 h-4" />
+                <span>Lock In Verdict</span>
+              </>
+            ) : (
+              <span>Choose Verdict to Submit</span>
+            )}
+          </button>
+        </div>
+      </main>
+
+      {/* FULLSCREEN IMAGE ZOOM MODAL */}
       {activeImageZoom && (
         <div 
           onClick={() => setActiveImageZoom(null)} 
-          className="fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4 backdrop-blur-md cursor-zoom-out"
+          className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 cursor-zoom-out"
         >
-          <div className="absolute top-4 right-4 bg-gray-900 border border-gray-700 text-cyan-400 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
-            ✕ Tap anywhere to close
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white/10 text-white border border-white/20">
+              Tap anywhere to close
+            </span>
+            <button
+              onClick={() => setActiveImageZoom(null)}
+              className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
+          
           <div className="max-w-4xl max-h-[85vh] w-full flex items-center justify-center p-2">
             <img 
               src={activeImageZoom} 
-              alt="Zoomed Threat Artifact" 
-              className="max-h-[80vh] max-w-full object-contain rounded-lg border-2 border-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.4)]" 
+              alt="Enlarged Artifact" 
+              className="max-h-[80vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/10" 
             />
           </div>
         </div>
       )}
+
     </div>
   );
 }

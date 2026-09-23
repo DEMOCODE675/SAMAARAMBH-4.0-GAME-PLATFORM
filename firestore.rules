@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Live Event State & Config
+    match /events/{eventId} {
+      allow read, write: if true;
+
+      // Team Subcollection
+      match /teams/{teamId} {
+        allow read, write: if true;
+      }
+
+      // Live Answers Subcollection
+      match /answers/{answerId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Players Collection
+    match /players/{playerPin} {
+      allow read, write: if true;
+    }
+
+    // Content & Question Bank Collection
+    match /content/{contentId} {
+      allow read, write: if true;
+
+      match /questions/{questionId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Connection test document
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

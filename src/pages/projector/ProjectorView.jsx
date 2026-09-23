@@ -1,18 +1,194 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useMemo, useRef } from 'react';
 import { GameContext } from '../../context/GameContext';
 import { db } from '../../config/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { motion } from 'framer-motion';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Trophy, 
+  Users, 
+  Clock, 
+  QrCode, 
+  Maximize2, 
+  Minimize2, 
+  Video, 
+  Sparkles, 
+  Terminal, 
+  HelpCircle, 
+  CheckCircle2, 
+  Zap, 
+  Flame,
+  Radio,
+  Image as ImageIcon
+} from 'lucide-react';
+import StageCountdown from '../../components/StageCountdown';
+
+// Option badge designs with high-contrast big-screen presence
+const MCQ_BADGES = [
+  { 
+    label: 'A', 
+    border: 'border-rose-500/70', 
+    bg: 'bg-rose-950/50', 
+    badgeBg: 'bg-rose-600 text-white shadow-rose-600/50', 
+    text: 'text-rose-100',
+    glow: 'shadow-[0_0_35px_rgba(244,63,94,0.25)]'
+  },
+  { 
+    label: 'B', 
+    border: 'border-blue-500/70', 
+    bg: 'bg-blue-950/50', 
+    badgeBg: 'bg-blue-600 text-white shadow-blue-600/50', 
+    text: 'text-blue-100',
+    glow: 'shadow-[0_0_35px_rgba(59,130,246,0.25)]'
+  },
+  { 
+    label: 'C', 
+    border: 'border-amber-500/70', 
+    bg: 'bg-amber-950/50', 
+    badgeBg: 'bg-amber-600 text-white shadow-amber-600/50', 
+    text: 'text-amber-100',
+    glow: 'shadow-[0_0_35px_rgba(245,158,11,0.25)]'
+  },
+  { 
+    label: 'D', 
+    border: 'border-emerald-500/70', 
+    bg: 'bg-emerald-950/50', 
+    badgeBg: 'bg-emerald-600 text-white shadow-emerald-600/50', 
+    text: 'text-emerald-100',
+    glow: 'shadow-[0_0_35px_rgba(16,185,129,0.25)]'
+  }
+];
+
+// Top-Left Brand Logo Badge (declared outside to avoid React re-creation in render)
+function TopLeftLogoBadge() {
+  return (
+    <div className="absolute top-6 left-6 z-40 flex items-center gap-3.5 bg-black/60 backdrop-blur-xl border border-white/15 px-4 py-2.5 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)] select-none">
+      <img 
+        src="/images/logo.jpg" 
+        onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
+        alt="MLSA MIET Organizer" 
+        className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-xl p-1 bg-white/10 border border-white/20 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" 
+      />
+      <div className="hidden sm:flex flex-col">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-black tracking-wider text-white">TECH<span className="text-amber-400">ARENA</span></span>
+          <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">4.0</span>
+        </div>
+        <span className="text-[11px] font-medium text-slate-400 tracking-wide">MLSA MIET Chapter</span>
+      </div>
+    </div>
+  );
+}
 
 export default function ProjectorView() {
   const { gameState } = useContext(GameContext);
+  
+  // Leaderboard data
   const [leaders, setLeaders] = useState([]);
   
+  // Real-time players joined count
+  const [playerCount, setPlayerCount] = useState(0);
+
+  // Submissions count for current active question
+  const [submissionCount, setSubmissionCount] = useState(0);
+
+  // Synchronized Timers
   const [setupCountdown, setSetupCountdown] = useState(5); 
   const [questionTimer, setQuestionTimer] = useState(0);
 
-  const eventUrl = "https://SAMARAMBH_event.com"; 
+  // Video Background Controls: 'auto' | 'firstbag' | 'leaderboard'
+  const [videoMode, setVideoMode] = useState('auto');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  const videoRef = useRef(null);
 
+  // Dynamic host event join URL
+  const eventUrl = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/play`;
+    }
+    return "https://techarena.app/play";
+  }, []);
+
+  // Determine active video source
+  const currentVideoSrc = useMemo(() => {
+    if (videoMode === 'firstbag') return '/videos/firstbag.mp4';
+    if (videoMode === 'leaderboard') return '/videos/leaderboardsolo.mp4';
+    
+    // Auto Mode:
+    // When in Leaderboard view, play leaderboardsolo.mp4
+    // When in Waiting / Playing view, play firstbag.mp4
+    if (gameState?.status === 'leaderboard') {
+      return '/videos/leaderboardsolo.mp4';
+    }
+    return '/videos/firstbag.mp4';
+  }, [videoMode, gameState?.status]);
+
+  // Fullscreen Toggle Handler
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.warn("Fullscreen request error:", err);
+      });
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+  };
+
+  // Keyboard shortcut listener ('F' for fullscreen, 'V' to toggle video mode)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      } else if (e.key === 'v' || e.key === 'V') {
+        setVideoMode(prev => prev === 'auto' ? 'leaderboard' : prev === 'leaderboard' ? 'firstbag' : 'auto');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // 1. Listen to active player count in lobby
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'players'), (snapshot) => {
+      setPlayerCount(snapshot.size);
+    }, (err) => console.warn("Player count error:", err));
+
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Listen to submission count during active question
+  useEffect(() => {
+    if (gameState?.status !== 'playing' || !gameState?.activeQuestion) {
+      const timer = setTimeout(() => setSubmissionCount(0), 0);
+      return () => clearTimeout(timer);
+    }
+
+    const qText = gameState.activeQuestion.question || 
+                  gameState.activeQuestion.payload?.question || 
+                  gameState.activeQuestion.payload?.prompt || 
+                  gameState.activeQuestion.payload?.missionText ||
+                  gameState.activeQuestion.payload?.puzzleText;
+
+    if (!qText) return;
+
+    try {
+      const answersRef = collection(db, 'events', 'samarambh', 'answers');
+      const q = query(answersRef, where("questionText", "==", qText));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        setSubmissionCount(snapshot.size);
+      }, (err) => console.warn("Answers count error:", err));
+
+      return () => unsubscribe();
+    } catch (err) {
+      console.warn("Submissions query setup:", err);
+    }
+  }, [gameState?.status, gameState?.activeQuestion]);
+
+  // 3. Question Timer Synchronization
   useEffect(() => {
     if (gameState?.status !== 'playing' || !gameState?.updatedAt) return;
 
@@ -40,6 +216,7 @@ export default function ProjectorView() {
     return () => clearInterval(interval);
   }, [gameState?.updatedAt, gameState?.status, gameState?.activeQuestion]);
 
+  // 4. Leaderboard Data Listener
   useEffect(() => {
     if (gameState?.status !== 'leaderboard') return;
     const isTeamMode = gameState.gameMode === 'team';
@@ -52,227 +229,579 @@ export default function ProjectorView() {
         results.push({
           id: doc.id,
           name: isTeamMode ? data.teamName : data.name,
-          score: isTeamMode ? (data.totalScore || 0) : (data.score || 0) 
+          score: isTeamMode ? (data.totalScore || 0) : (data.score || 0),
+          teamCode: data.teamCode || null
         });
       });
       results.sort((a, b) => b.score - a.score);
-      setLeaders(results.slice(0, 5));
+      setLeaders(results.slice(0, 8));
+    }, (error) => {
+      console.warn("Leaderboard listener error:", error.message);
     });
 
     return () => unsubscribe();
   }, [gameState?.status, gameState?.gameMode]);
 
-  // 🏷️ TOP-LEFT LOGO BADGE
-  const TopLeftLogoBadge = () => (
-    <div className="absolute top-6 left-6 z-50 bg-black/40 backdrop-blur-md border border-fuchsia-500/30 p-2 rounded-2xl shadow-[0_0_20px_rgba(217,70,239,0.2)] select-none">
-      <img 
-        src="/images/logo.jpg" 
-        alt="MLSA MIET Organizer" 
-        className="w-12 h-12 md:w-16 md:h-16 object-contain rounded-xl drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]" 
-      />
+  // Shared Background Video Container with high-end atmospheric layering
+  const renderBackgroundVideo = () => (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 select-none">
+      <video 
+        ref={videoRef}
+        key={currentVideoSrc}
+        autoPlay 
+        loop 
+        muted 
+        playsInline 
+        className="w-full h-full object-cover scale-105 filter contrast-110 saturate-125 transition-opacity duration-1000 opacity-45"
+      >
+        <source src={currentVideoSrc} type="video/mp4" />
+        <source src="/videos/leaderboardsolo.mp4" type="video/mp4" />
+        <source src="/videos/firstbag.mp4" type="video/mp4" />
+      </video>
+
+      {/* Atmospheric Stage Vignettes & Gradient Shimmer */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#070b14] via-[#070b14]/85 to-[#070b14]/90" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.12)_0%,transparent_70%)]" />
     </div>
   );
 
-  // ================= 1. VIEW 1: STANDBY / WAITING SCREEN =================
+  // Operator HUD Controls (Floating discreetly in bottom right)
+  const renderOperatorBar = () => (
+    <div 
+      className="fixed bottom-4 right-4 z-50 flex items-center gap-2 select-none"
+      onMouseEnter={() => setShowControls(true)}
+      onMouseLeave={() => setShowControls(false)}
+    >
+      <AnimatePresence>
+        {showControls && (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-xl border border-white/20 p-1.5 rounded-2xl shadow-2xl text-xs text-slate-300"
+          >
+            <div className="flex items-center gap-1 px-2 font-mono text-[11px] text-amber-400">
+              <Video className="w-3.5 h-3.5" />
+              <span>BG:</span>
+            </div>
+
+            <button
+              onClick={() => setVideoMode('auto')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                videoMode === 'auto' 
+                  ? 'bg-indigo-600 text-white shadow-sm' 
+                  : 'hover:bg-white/10 text-slate-400'
+              }`}
+            >
+              Auto
+            </button>
+
+            <button
+              onClick={() => setVideoMode('firstbag')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                videoMode === 'firstbag' 
+                  ? 'bg-indigo-600 text-white shadow-sm' 
+                  : 'hover:bg-white/10 text-slate-400'
+              }`}
+              title="/videos/firstbag.mp4"
+            >
+              Vid 1
+            </button>
+
+            <button
+              onClick={() => setVideoMode('leaderboard')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                videoMode === 'leaderboard' 
+                  ? 'bg-indigo-600 text-white shadow-sm' 
+                  : 'hover:bg-white/10 text-slate-400'
+              }`}
+              title="/videos/leaderboardsolo.mp4"
+            >
+              Vid 2
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <button
+        onClick={toggleFullscreen}
+        className="p-3 bg-slate-900/80 hover:bg-slate-800 backdrop-blur-xl border border-white/20 text-white rounded-2xl shadow-xl transition-all active:scale-95"
+        title="Toggle Fullscreen (F)"
+      >
+        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+
+  // =========================================================================
+  // VIEW 1: GRAND STANDBY / WAITING SCREEN (LOBBY & QR CODE)
+  // =========================================================================
   if (!gameState || gameState.status === 'waiting' || gameState.status === 'idle' || !gameState.status) {
     return (
-      <div className="min-h-screen bg-black text-white font-mono flex flex-col items-center justify-center p-8 text-center select-none overflow-hidden relative">
+      <div className="min-h-screen bg-[#070b14] text-white flex flex-col items-center justify-between p-8 md:p-14 select-none overflow-hidden relative font-sans">
         <TopLeftLogoBadge />
+        {renderBackgroundVideo()}
+        {renderOperatorBar()}
 
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-45 scale-105">
-            <source src="/videos/firstbag.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/40"></div>
+        {/* Top Status Pill */}
+        <div className="z-10 pt-2 flex items-center gap-2">
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold tracking-wider uppercase shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+            <Radio className="w-3.5 h-3.5 animate-pulse" />
+            <span>Arena Lobby Live</span>
+          </div>
+
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold tracking-wider">
+            <Users className="w-3.5 h-3.5 text-indigo-400" />
+            <span><strong>{playerCount}</strong> Competitors In Arena</span>
+          </div>
         </div>
 
-        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="mb-10 z-10">
-          <h2 className="text-2xl text-amber-300 tracking-[0.4em] uppercase font-bold mb-2">TechArena Live Event</h2>
-          <h1 className="text-6xl md:text-8xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 via-amber-300 to-orange-400 tracking-wider drop-shadow-[0_0_50px_rgba(232,60,180,0.6)]">
-            SAMARAMBH 4.0
-          </h1>
-        </motion.div>
+        {/* Central Stage Hero */}
+        <div className="z-10 flex flex-col items-center max-w-6xl w-full my-auto text-center">
+          <motion.div 
+            initial={{ y: -30, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            transition={{ duration: 0.7 }}
+            className="mb-6 md:mb-8"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs md:text-sm font-bold uppercase tracking-[0.3em] mb-4 shadow-[0_0_25px_rgba(245,158,11,0.2)]">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>State-Level Annual Tech Symposium</span>
+            </div>
 
-        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-5xl bg-gray-950/85 backdrop-blur-md border-4 border-fuchsia-500/80 p-10 md:p-14 rounded-3xl shadow-[0_0_80px_rgba(232,60,180,0.3)] grid grid-cols-1 md:grid-cols-2 items-center gap-10 z-10">
-          <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-4">
-        
-            <p className="text-2xl md:text-3xl font-bold text-gray-300 tracking-wider">Join via Link:</p>
-            <p className="text-3xl md:text-4xl font-black text-amber-400 tracking-wide break-all underline decoration-fuchsia-500 underline-offset-8">
-              {eventUrl}
+            <h1 className="text-6xl sm:text-7xl md:text-9xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-amber-200 drop-shadow-[0_0_60px_rgba(99,102,241,0.5)]">
+              SAMARAMBH 4.0
+            </h1>
+            <p className="text-lg md:text-2xl text-slate-300 font-semibold tracking-widest uppercase mt-3">
+              Inter-College Cybersecurity & Coding Clash
             </p>
-          </div>
+          </motion.div>
 
-          <div className="flex flex-col items-center justify-center bg-white p-6 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.25)] max-w-[280px] mx-auto w-full">
-            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(eventUrl)}`} alt="Scan to Join Game" className="w-48 h-48 md:w-56 md:h-56 object-contain" />
-            <span className="text-black font-black text-[11px] uppercase tracking-widest mt-3">Scan QR Code to Join</span>
-          </div>
-        </motion.div>
+          {/* Join Instructions & QR Code Card */}
+          <motion.div 
+            initial={{ scale: 0.94, opacity: 0 }} 
+            animate={{ scale: 1, opacity: 1 }} 
+            transition={{ duration: 0.6, delay: 0.2 }} 
+            className="w-full max-w-4xl bg-slate-900/70 backdrop-blur-2xl border-2 border-indigo-500/40 p-8 md:p-12 rounded-3xl shadow-[0_0_80px_rgba(99,102,241,0.25)] grid grid-cols-1 md:grid-cols-2 items-center gap-8 md:gap-12"
+          >
+            {/* Left Instructions */}
+            <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-4">
+              <span className="text-xs uppercase font-extrabold tracking-widest text-indigo-400 px-3 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/30">
+                Live Registration
+              </span>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.4 }} className="mt-10 z-10">
-          <p className="text-center text-gray-400 text-sm">
-            Need help? Contact the event host for assistance.
-          </p>
-        </motion.div>
+              <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+                Scan & Enter PIN
+              </h2>
+
+              <p className="text-slate-300 text-sm md:text-base leading-relaxed">
+                Connect your mobile phone to the competition grid. Enter your assigned PIN to join your squad or solo ranking.
+              </p>
+
+              <div className="w-full pt-2">
+                <span className="text-xs text-slate-400 block mb-1 font-mono uppercase tracking-wider">Direct Access Link:</span>
+                <div className="p-3.5 rounded-xl bg-black/60 border border-white/15 text-amber-300 font-mono text-base md:text-xl font-bold break-all shadow-inner">
+                  {eventUrl}
+                </div>
+              </div>
+            </div>
+
+            {/* Right QR Code */}
+            <div className="flex flex-col items-center justify-center">
+              <div className="p-5 bg-white rounded-3xl shadow-[0_0_50px_rgba(255,255,255,0.3)] border-4 border-indigo-400/50">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(eventUrl)}&margin=4`} 
+                  alt="Scan to Join Event" 
+                  className="w-48 h-48 md:w-56 md:h-56 object-contain"
+                />
+              </div>
+              <div className="flex items-center gap-2 mt-4 text-xs font-bold uppercase tracking-widest text-slate-300">
+                <QrCode className="w-4 h-4 text-amber-400" />
+                <span>Instant Mobile Camera Scan</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Footer info */}
+        <div className="z-10 text-center text-xs md:text-sm text-slate-400 font-medium">
+          Organized by <strong className="text-white">Microsoft Learn Student Ambassadors MIET</strong> · Powered by TechArena Realtime Engine
+        </div>
       </div>
     );
   }
 
-  // ================= 2. VIEW 2: LEADERBOARD SCREEN =================
+  // =========================================================================
+  // VIEW 2: EPIC LEADERBOARD & PODIUM SCREEN (RUNS leaderboardsolo.mp4)
+  // =========================================================================
   if (gameState?.status === 'leaderboard') {
     const isTeamMode = gameState.gameMode === 'team';
+
     return (
-      <div className="min-h-screen bg-black text-white font-mono flex flex-col items-center p-12 overflow-hidden relative">
+      <div className="min-h-screen bg-[#070b14] text-white flex flex-col items-center justify-between p-8 md:p-12 overflow-hidden relative select-none font-sans">
         <TopLeftLogoBadge />
+        {renderBackgroundVideo()}
+        {renderOperatorBar()}
 
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-40 scale-105 filter contrast-125 saturate-150">
-            <source src="/videos/firstbag.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0f051d]/95 via-black/70 to-[#0f051d]/85"></div>
-        </div>
+        {/* Header Title */}
+        <motion.div 
+          initial={{ y: -40, opacity: 0 }} 
+          animate={{ y: 0, opacity: 1 }} 
+          transition={{ duration: 0.6 }} 
+          className="text-center z-10 pt-4"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-400 text-xs md:text-sm font-bold uppercase tracking-[0.25em] mb-2 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+            <Trophy className="w-4 h-4 text-amber-400" />
+            <span>Official Stage Standings</span>
+          </div>
 
-        <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }} className="text-center mb-16 pt-8 z-10">
-          <h1 className="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 via-amber-300 to-orange-400 tracking-widest drop-shadow-[0_0_30px_rgba(232,60,180,0.4)]">
-            {isTeamMode ? 'SQUAD RANKINGS' : 'SOLO RANKINGS'}
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-rose-300 to-indigo-300 drop-shadow-[0_0_40px_rgba(245,158,11,0.4)]">
+            {isTeamMode ? 'SQUAD GRAND RANKINGS' : 'SOLO ARENA STANDINGS'}
           </h1>
         </motion.div>
 
-        <div className="w-full max-w-5xl space-y-6 z-10">
+        {/* Leaderboard Grid */}
+        <div className="w-full max-w-5xl space-y-3.5 z-10 my-auto">
           {leaders.length === 0 ? (
-            <div className="text-center py-24 bg-gray-900/40 border border-gray-800 rounded-3xl backdrop-blur-md">
-              <p className="text-3xl text-gray-500 animate-pulse uppercase tracking-widest">Tabulating telemetry data...</p>
+            <div className="text-center py-20 bg-slate-900/60 border border-white/10 rounded-3xl backdrop-blur-xl">
+              <Trophy className="w-16 h-16 mx-auto mb-4 text-amber-400 animate-bounce" />
+              <p className="text-2xl text-slate-300 font-bold uppercase tracking-widest">
+                Tabulating Arena Scores...
+              </p>
+              <p className="text-sm text-slate-500 mt-2">Connecting to live submission matrix</p>
             </div>
           ) : (
             leaders.map((leader, index) => {
-              let borderStyle = 'border-gray-800 bg-gray-950/80 text-gray-400';
-              let rankBadge = `#${index + 1}`;
-              
-              if (index === 0) { 
-                borderStyle = 'border-amber-500 bg-gradient-to-r from-amber-950/40 to-gray-950 text-amber-300 shadow-[0_0_40px_rgba(234,179,8,0.25)] scale-[1.02]'; 
-                rankBadge = '🥇 01'; 
-              } else if (index === 1) { 
-                borderStyle = 'border-fuchsia-400 bg-gradient-to-r from-gray-900 to-gray-950 text-gray-200 shadow-[0_0_25px_rgba(232,60,180,0.15)]'; 
-                rankBadge = '🥈 02'; 
-              } else if (index === 2) { 
-                borderStyle = 'border-orange-700 bg-gradient-to-r from-orange-950/30 to-gray-950 text-orange-500 shadow-[0_0_25px_rgba(249,115,22,0.15)]'; 
-                rankBadge = '🥉 03'; 
+              const isFirst = index === 0;
+              const isSecond = index === 1;
+              const isThird = index === 2;
+
+              let cardStyle = 'border-white/10 bg-slate-900/60 text-slate-300';
+              let badgeColor = 'bg-slate-800 text-slate-300 border-slate-700';
+              let rankText = `#0${index + 1}`;
+              let medalIcon = null;
+
+              if (isFirst) {
+                cardStyle = 'border-amber-400/80 bg-gradient-to-r from-amber-950/60 via-slate-900/90 to-amber-950/50 text-white shadow-[0_0_45px_rgba(245,158,11,0.35)] scale-[1.02] ring-2 ring-amber-400/40';
+                badgeColor = 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-[0_0_20px_rgba(245,158,11,0.6)]';
+                rankText = '1ST';
+                medalIcon = '👑';
+              } else if (isSecond) {
+                cardStyle = 'border-slate-300/60 bg-gradient-to-r from-slate-800/80 via-slate-900/90 to-slate-800/60 text-white shadow-[0_0_30px_rgba(203,213,225,0.2)]';
+                badgeColor = 'bg-slate-300 text-slate-950 border-white font-bold shadow-[0_0_15px_rgba(203,213,225,0.5)]';
+                rankText = '2ND';
+                medalIcon = '🥈';
+              } else if (isThird) {
+                cardStyle = 'border-amber-700/60 bg-gradient-to-r from-amber-950/50 via-slate-900/90 to-amber-950/30 text-white shadow-[0_0_25px_rgba(180,83,9,0.2)]';
+                badgeColor = 'bg-amber-700 text-white border-amber-600 font-bold';
+                rankText = '3RD';
+                medalIcon = '🥉';
               }
 
               return (
-                <motion.div key={leader.id} initial={{ x: -80, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.4, delay: index * 0.1 }} className={`flex justify-between items-center px-10 py-6 rounded-2xl border-2 transition-all duration-300 backdrop-blur-md ${borderStyle}`}>
-                  <div className="flex items-center gap-8">
-                    <span className="text-4xl font-black w-24 tracking-wider">{rankBadge}</span>
+                <motion.div 
+                  key={leader.id} 
+                  layout
+                  initial={{ x: -40, opacity: 0 }} 
+                  animate={{ x: 0, opacity: 1 }} 
+                  transition={{ 
+                    layout: { type: "spring", stiffness: 350, damping: 28 },
+                    duration: 0.35 
+                  }} 
+                  className={`flex justify-between items-center px-6 md:px-8 py-4 md:py-5 rounded-2xl border-2 backdrop-blur-xl transition-all duration-300 ${cardStyle}`}
+                >
+                  <div className="flex items-center gap-5 md:gap-8">
+                    {/* Rank Badge */}
+                    <div className={`px-4 py-2 rounded-xl border text-sm md:text-base font-mono flex items-center gap-1.5 shrink-0 ${badgeColor}`}>
+                      {medalIcon && <span>{medalIcon}</span>}
+                      <span>{rankText}</span>
+                    </div>
+
+                    {/* Participant / Squad Name */}
                     <div className="flex flex-col">
-                      <span className="text-4xl font-bold tracking-wide text-white">{leader.name}</span>
+                      <span className="text-2xl md:text-3xl font-extrabold tracking-wide text-white">
+                        {leader.name}
+                      </span>
+                      {leader.teamCode && !isTeamMode && (
+                        <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">
+                          Squad: {leader.teamCode}
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-6xl font-black tracking-wider text-amber-400 drop-shadow-[0_0_10px_rgba(232,60,180,0.3)]">{leader.score}</span>
-                    <span className="text-xl font-bold text-gray-500 uppercase tracking-widest">pts</span>
+                  {/* Score */}
+                  <div className="flex items-baseline gap-2.5">
+                    <span className="text-4xl md:text-5xl font-black tracking-wider text-amber-400 drop-shadow-[0_0_15px_rgba(245,158,11,0.4)] font-mono">
+                      {leader.score}
+                    </span>
+                    <span className="text-sm md:text-base font-bold text-slate-400 uppercase tracking-widest">
+                      PTS
+                    </span>
                   </div>
                 </motion.div>
               );
             })
           )}
         </div>
+
+        {/* Footer */}
+        <div className="z-10 text-center text-xs md:text-sm text-slate-400 font-medium">
+          Samarambh 4.0 · Live Stage Leaderboard
+        </div>
       </div>
     );
   }
 
-  // ================= 3. VIEW 3: ACTIVE PLAY / QUESTION SCREEN =================
+  // =========================================================================
+  // VIEW 3: ACTIVE PLAY / LIVE QUESTION TRANSMISSION SCREEN
+  // =========================================================================
   if (gameState?.status === 'playing') {
-    // Fallback support if activeQuestion is stored directly or inside payload
     const qData = gameState?.activeQuestion || {};
-    const questionText = qData.question || qData.payload?.question || "Check your device for the active challenge!";
-    const optionsList = qData.options || qData.payload?.options || [];
-    const missionText = qData.missionText || qData.payload?.missionText || "";
-    const consoleText = qData.consoleText || qData.payload?.consoleText || "";
+    const payload = qData.payload || {};
     const qType = qData.type || 'mcq';
     const isTeamMode = gameState?.gameMode === 'team';
 
+    // Extract challenge contents across formats
+    const questionText = qData.question || payload.question || payload.prompt || payload.missionText || payload.puzzleText || "Check your device for the active challenge!";
+    const optionsList = qData.options || payload.options || [];
+    const imagesList = payload.images || (payload.imageUrl ? [payload.imageUrl] : []);
+    const consoleText = payload.consoleText || "";
+
+    const isTimeCritical = questionTimer <= 5;
+    const isTimeWarning = questionTimer <= 10 && questionTimer > 5;
+
     return (
-      <div className="min-h-screen bg-black text-white font-mono flex flex-col p-8 md:p-12 relative overflow-hidden justify-between">
+      <div className="min-h-screen bg-[#070b14] text-white flex flex-col justify-between p-8 md:p-12 relative overflow-hidden select-none font-sans">
         <TopLeftLogoBadge />
+        {renderBackgroundVideo()}
+        {renderOperatorBar()}
 
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-35 scale-105 filter contrast-125 saturate-150">
-            <source src="/videos/firstbag.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0f051d]/95 via-black/80 to-[#0f051d]/90"></div>
-        </div>
-
-        {/* Top Header */}
-        <div className="flex justify-between items-center border-b-2 border-fuchsia-900/60 pb-6 mb-8 z-10 pt-4 md:pt-0">
-          <div className="flex items-center gap-6 pl-28 md:pl-0">
-            <div className="w-8 h-8 bg-rose-600 rounded-full animate-pulse shadow-[0_0_20px_rgba(225,29,72,0.8)]"></div>
-           
-          </div>
-          
-          {setupCountdown === 0 ? (
-            <div className={`px-6 py-2 md:px-8 md:py-3 border-4 rounded-xl text-2xl md:text-3xl font-extrabold tracking-widest uppercase ${
-              questionTimer <= 5 ? 'border-red-600 text-red-500 bg-red-950/40 animate-bounce' : 'border-amber-400 text-amber-300'
-            }`}>
-              Time Left: {questionTimer}s
-            </div>
-          ) : (
-            <div className="px-6 py-2 md:px-8 md:py-3 border-4 border-amber-400 text-amber-300 rounded-xl text-2xl md:text-3xl font-extrabold uppercase animate-pulse">
-              Deploying in: {setupCountdown}s
-            </div>
-          )}
-
-          <div className={`px-6 py-2 md:px-8 md:py-3 border-4 rounded-xl text-2xl md:text-3xl font-bold uppercase ${isTeamMode ? 'border-fuchsia-500 text-fuchsia-400' : 'border-violet-500 text-violet-400'}`}>
-            {isTeamMode ? 'Team Mode' : 'Solo Mode'}
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-grow flex flex-col items-center justify-center z-10 my-auto w-full max-w-7xl mx-auto">
-          {setupCountdown > 0 ? (
-            <div className="text-center">
-              <div className="text-9xl font-black text-amber-300 mb-6 animate-pulse drop-shadow-[0_0_35px_rgba(251,191,36,0.5)]">
-                {setupCountdown}
+        {/* Top Header Bar */}
+        <header className="flex justify-between items-center border-b border-white/15 pb-6 mb-6 z-10 pl-24 md:pl-0">
+          <div className="flex items-center gap-3">
+            <span className="w-3.5 h-3.5 rounded-full bg-rose-500 animate-ping" />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-extrabold uppercase tracking-wider text-rose-400">
+                  LIVE CHALLENGE
+                </span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 uppercase font-semibold">
+                  {isTeamMode ? 'Squad Battle' : 'Solo Arena'}
+                </span>
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-200 tracking-widest uppercase">
-                Incoming Transmission...
-              </h1>
+              <span className="text-xs text-slate-400 font-medium">
+                Samarambh 4.0 Auditorium Stage
+              </span>
             </div>
+          </div>
+
+          {/* Submissions ticker & Timer */}
+          <div className="flex items-center gap-4">
+            {setupCountdown === 0 && submissionCount > 0 && (
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm font-bold font-mono shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>{submissionCount} Submissions Locked</span>
+              </div>
+            )}
+
+            {setupCountdown === 0 ? (
+              <div className={`px-6 py-2.5 rounded-2xl border-2 text-2xl md:text-3xl font-black font-mono tracking-wider uppercase transition-all flex items-center gap-2.5 ${
+                isTimeCritical 
+                  ? 'border-rose-500 text-rose-400 bg-rose-950/60 animate-bounce shadow-[0_0_30px_rgba(244,63,94,0.5)]' 
+                  : isTimeWarning
+                    ? 'border-amber-400 text-amber-300 bg-amber-950/40 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
+                    : 'border-indigo-400 text-indigo-300 bg-indigo-950/40 shadow-[0_0_20px_rgba(99,102,241,0.3)]'
+              }`}>
+                <Clock className="w-6 h-6" />
+                <span>{questionTimer}s</span>
+              </div>
+            ) : (
+              <div className="px-6 py-2.5 rounded-2xl border-2 border-amber-400 text-amber-300 bg-amber-950/40 text-xl md:text-2xl font-black uppercase animate-pulse shadow-[0_0_25px_rgba(245,158,11,0.3)] flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-400" />
+                <span>Deploying: {setupCountdown}s</span>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Central Display Area */}
+        <main className="flex-grow flex flex-col items-center justify-center z-10 my-auto w-full max-w-7xl mx-auto py-4">
+          {setupCountdown > 0 ? (
+            /* CINEMA-GRADE INCOMING TRANSMISSION COUNTDOWN */
+            <StageCountdown
+              seconds={setupCountdown}
+              maxSeconds={5}
+              mode="projector"
+              badgeText="Incoming Arena Challenge"
+              title="Incoming Arena Challenge"
+              subtitle="Contestants, look at your mobile controllers! Fast responses receive maximum speed bonuses."
+              timeWindow={qData.timeLimit || 20}
+              brandName="Samarambh 4.0"
+            />
           ) : (
-            <>
-              {qType !== 'terminal_hack' ? (
-                <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full flex flex-col items-center">
-                  <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-12 text-center leading-relaxed border-l-8 border-fuchsia-500 pl-6 md:pl-10 bg-black/40 backdrop-blur-md p-6 rounded-2xl w-full shadow-2xl">
+            /* ACTIVE QUESTION CONTENT BASED ON CHALLENGE TYPE */
+            <div className="w-full">
+              {/* 1. VISUAL INSPECTION / PHOTO RECOGNIZE */}
+              {qType === 'photo_recognize' ? (
+                <motion.div 
+                  initial={{ scale: 0.96, opacity: 0 }} 
+                  animate={{ scale: 1, opacity: 1 }} 
+                  className="w-full flex flex-col items-center space-y-6"
+                >
+                  <div className="w-full bg-slate-900/80 backdrop-blur-2xl border-2 border-indigo-500/40 p-6 md:p-8 rounded-3xl shadow-2xl text-center">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-3">
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      <span>Visual Evidence Inspection</span>
+                    </div>
+                    <h1 className="text-2xl md:text-4xl font-extrabold text-white leading-relaxed">
+                      {questionText}
+                    </h1>
+                  </div>
+
+                  {imagesList.length > 0 && (
+                    <div className={`grid ${imagesList.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-6 w-full max-w-5xl`}>
+                      {imagesList.map((img, i) => (
+                        <div key={i} className="h-64 md:h-80 bg-black/60 rounded-3xl overflow-hidden border-2 border-white/20 p-2 shadow-2xl">
+                          <img 
+                            src={img} 
+                            alt={`Artifact ${i + 1}`} 
+                            className="w-full h-full object-contain rounded-2xl" 
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {optionsList.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
+                      {optionsList.map((opt, idx) => {
+                        const b = MCQ_BADGES[idx % MCQ_BADGES.length];
+                        return (
+                          <div key={idx} className={`p-5 md:p-6 rounded-2xl border-2 backdrop-blur-xl flex items-center ${b.border} ${b.bg} ${b.glow}`}>
+                            <span className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-xl md:text-2xl font-black mr-5 shrink-0 ${b.badgeBg}`}>
+                              {b.label}
+                            </span>
+                            <span className={`text-xl md:text-3xl font-bold ${b.text}`}>{opt}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </motion.div>
+              ) : qType === 'terminal_hack' ? (
+                /* 2. TERMINAL SHELL CHALLENGE */
+                <motion.div 
+                  initial={{ scale: 0.96, opacity: 0 }} 
+                  animate={{ scale: 1, opacity: 1 }} 
+                  className="w-full flex flex-col items-center space-y-6"
+                >
+                  <div className="w-full bg-slate-900/80 backdrop-blur-2xl border-2 border-amber-500/40 p-6 md:p-8 rounded-3xl shadow-2xl text-center">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold uppercase tracking-wider mb-2">
+                      <Terminal className="w-3.5 h-3.5" />
+                      <span>Security Incident Command Mission</span>
+                    </div>
+                    <h1 className="text-2xl md:text-4xl font-extrabold text-amber-300 leading-relaxed font-mono">
+                      {questionText}
+                    </h1>
+                  </div>
+
+                  {consoleText && (
+                    <div className="w-full max-w-5xl rounded-3xl border-2 border-slate-700 bg-[#0c1220]/95 backdrop-blur-2xl shadow-2xl overflow-hidden text-left font-mono">
+                      <div className="bg-slate-800/80 px-5 py-3 border-b border-slate-700 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full bg-rose-500/80" />
+                          <span className="w-3 h-3 rounded-full bg-amber-500/80" />
+                          <span className="w-3 h-3 rounded-full bg-emerald-500/80" />
+                        </div>
+                        <span className="text-xs text-slate-400">root@arena-node:~# bash</span>
+                      </div>
+                      <pre className="p-6 md:p-8 text-xl md:text-3xl text-emerald-400 overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                        {consoleText}
+                      </pre>
+                    </div>
+                  )}
+                </motion.div>
+              ) : qType === 'logic_puzzle' ? (
+                /* 3. LOGIC RIDDLE / PUZZLE */
+                <motion.div 
+                  initial={{ scale: 0.96, opacity: 0 }} 
+                  animate={{ scale: 1, opacity: 1 }} 
+                  className="w-full max-w-5xl bg-slate-900/80 backdrop-blur-2xl border-2 border-indigo-500/40 p-8 md:p-12 rounded-3xl shadow-2xl text-center space-y-6"
+                >
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-bold uppercase tracking-wider">
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>Logic Riddle Decryption</span>
+                  </div>
+                  <h1 className="text-3xl md:text-5xl font-extrabold text-white leading-relaxed">
                     {questionText}
                   </h1>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 w-full">
-                    {(optionsList).map((opt, idx) => (
-                      <div key={idx} className="bg-[#120724]/90 border-4 border-fuchsia-900/60 p-6 md:p-8 rounded-2xl flex items-center text-left backdrop-blur-md shadow-2xl">
-                        <span className="text-3xl md:text-4xl font-black text-fuchsia-400/60 mr-6">[{idx + 1}]</span>
-                        <span className="text-2xl md:text-4xl font-bold text-fuchsia-200">{opt}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-sm md:text-base text-slate-400">
+                    Type your solution into your mobile controller before the time window expires!
+                  </p>
                 </motion.div>
               ) : (
-                <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full flex flex-col items-center">
-                  <h1 className="text-3xl md:text-5xl text-amber-400 mb-8 font-bold text-center border-b-4 border-amber-900/60 pb-6">
-                    Mission: {missionText || questionText}
-                  </h1>
-                  <div className="bg-gray-950/95 border-4 border-amber-900/80 p-8 rounded-2xl w-full shadow-2xl backdrop-blur-md">
-                    <pre className="text-2xl md:text-4xl text-amber-300 font-mono whitespace-pre-wrap">{consoleText}</pre>
+                /* 4. STANDARD MULTIPLE CHOICE (MCQ) */
+                <motion.div 
+                  initial={{ scale: 0.96, opacity: 0 }} 
+                  animate={{ scale: 1, opacity: 1 }} 
+                  className="w-full flex flex-col items-center space-y-8"
+                >
+                  {/* Huge Question Text Card */}
+                  <div className="w-full bg-slate-900/80 backdrop-blur-2xl border-2 border-indigo-500/40 p-8 md:p-12 rounded-3xl shadow-2xl text-center">
+                    <span className="inline-block text-xs uppercase font-extrabold tracking-widest text-indigo-400 px-3 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/30 mb-3">
+                      Arena Question
+                    </span>
+                    <h1 className="text-3xl sm:text-4xl md:text-6xl font-black text-white leading-tight">
+                      {questionText}
+                    </h1>
+                  </div>
+
+                  {/* 4 Colored Option Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 w-full">
+                    {optionsList.map((opt, idx) => {
+                      const b = MCQ_BADGES[idx % MCQ_BADGES.length];
+
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`p-6 md:p-8 rounded-3xl border-2 backdrop-blur-xl flex items-center text-left transition-all ${b.border} ${b.bg} ${b.glow}`}
+                        >
+                          <span className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-2xl md:text-3xl font-black mr-6 shrink-0 shadow-lg ${b.badgeBg}`}>
+                            {b.label}
+                          </span>
+                          <span className={`text-2xl md:text-4xl font-extrabold leading-snug break-words ${b.text}`}>
+                            {opt}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
-            </>
+            </div>
           )}
-        </div>
+        </main>
 
-        {/* Footer Status */}
-        <div className="mt-auto text-center border-t-2 border-fuchsia-900/60 pt-6 z-10">
-          <p className="text-2xl md:text-4xl text-gray-300 uppercase tracking-widest font-bold">
-            {setupCountdown > 0 ? 'Get ready to read the question...' : questionTimer === 0 ? 'TIME EXPIRED!' : 'Answering window is open! Lock in your answer!'}
+        {/* Footer Bar */}
+        <footer className="mt-auto text-center border-t border-white/15 pt-5 z-10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs md:text-sm text-slate-300 font-semibold uppercase tracking-wider">
+          <div className="flex items-center gap-2">
+            <Flame className="w-4 h-4 text-amber-400" />
+            <span>Samarambh 4.0 Live Session</span>
+          </div>
+
+          <p className="font-bold">
+            {setupCountdown > 0 
+              ? 'Get ready to lock your answers...' 
+              : questionTimer === 0 
+                ? 'Time Expired! Host tabulating results...' 
+                : 'Answering window open! Submit on mobile!'}
           </p>
-        </div>
+
+          <div className="text-slate-400 text-xs font-mono">
+            Press [F] Fullscreen
+          </div>
+        </footer>
 
       </div>
     );

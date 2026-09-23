@@ -10,6 +10,20 @@ export function GameProvider({ children }) {
     activeQuestion: null, // Holds the current question payload
     timeRemaining: 0,
   });
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     // Listen to the master event document
@@ -21,6 +35,8 @@ export function GameProvider({ children }) {
       } else {
         console.log("Waiting for admin to initialize the game...");
       }
+    }, (error) => {
+      console.warn("Firestore event listener error:", error.message);
     });
 
     // Cleanup listener when app closes
@@ -28,7 +44,7 @@ export function GameProvider({ children }) {
   }, []);
 
   return (
-    <GameContext.Provider value={{ gameState }}>
+    <GameContext.Provider value={{ gameState, isOnline }}>
       {children}
     </GameContext.Provider>
   );

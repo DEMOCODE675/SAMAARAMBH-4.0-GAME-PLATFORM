@@ -3,22 +3,58 @@ import { AuthContext } from '../../../context/AuthContext';
 import { GameContext } from '../../../context/GameContext';
 import { db } from '../../../config/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { saveToOfflineQueue, flushOfflineQueue } from '../../../utils/offlineSync';
+import { 
+  Check, 
+  CheckCircle2, 
+  Clock, 
+  Lock, 
+  Sun, 
+  Moon, 
+  Sparkles, 
+  Zap, 
+  AlertCircle 
+} from 'lucide-react';
+import StageCountdown from '../../../components/StageCountdown';
 
+const OPTION_BADGES = [
+  { label: 'A', bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/60' },
+  { label: 'B', bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/60' },
+  { label: 'C', bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/60' },
+  { label: 'D', bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/60' },
+  { label: 'E', bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-900/60' },
+  { label: 'F', bg: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-200 dark:border-cyan-900/60' }
+];
 
-export default function QuizUI({ payload }) {
+export default function QuizUI({ payload, setHasSubmitted: setParentSubmitted }) {
   const { player } = useContext(AuthContext);
   const { gameState } = useContext(GameContext);
   
   const [selected, setSelected] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
-  
-  const [setupCountdown, setSetupCountdown] = useState(5);
-  const [questionTimer, setQuestionTimer] = useState(gameState?.activeQuestion?.timeLimit || 20);
+  const [lockedAnswer, setLockedAnswer] = useState(null);
+  const [questionStartTime, setQuestionStartTime] = useState(null);
 
+  // Eye-friendly theme preference
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('techarena_theme') === 'dark';
+  });
+
+  const toggleTheme = () => {
+    setIsDarkMode(prev => {
+      const next = !prev;
+      localStorage.setItem('techarena_theme', next ? 'dark' : 'light');
+      return next;
+    });
+  };
+
+  const totalTimeLimit = gameState?.activeQuestion?.timeLimit || 20;
+  const [setupCountdown, setSetupCountdown] = useState(5);
+  const [questionTimer, setQuestionTimer] = useState(totalTimeLimit);
+
+  // Synchronized Countdown & Question Timer
   useEffect(() => {
     if (!gameState?.updatedAt) return;
-    const timeLimit = gameState.activeQuestion?.timeLimit || 20;
     const updatedAtMs = gameState.updatedAt.toMillis ? gameState.updatedAt.toMillis() : Date.now();
 
     const updateTimers = () => {
@@ -27,11 +63,11 @@ export default function QuizUI({ payload }) {
       
       if (remainingSetup > 0) {
         setSetupCountdown(remainingSetup);
-        setQuestionTimer(timeLimit);
+        setQuestionTimer(totalTimeLimit);
       } else {
         setSetupCountdown(0);
         const activeElapsed = elapsedSeconds - 5;
-        const remainingQuestionTime = timeLimit - activeElapsed;
+        const remainingQuestionTime = totalTimeLimit - activeElapsed;
         setQuestionTimer(remainingQuestionTime <= 0 ? 0 : remainingQuestionTime);
       }
     };
@@ -39,136 +75,383 @@ export default function QuizUI({ payload }) {
     updateTimers();
     const interval = setInterval(updateTimers, 1000);
     return () => clearInterval(interval);
-  }, [gameState?.updatedAt]);
+  }, [gameState?.updatedAt, totalTimeLimit]);
 
- // 1. Add a ref when the component loads to track start time (after the 5s setup countdown ends)
-const [questionStartTime, setQuestionStartTime] = useState(null);
+  // Record time question became interactive
+  useEffect(() => {
+    if (setupCountdown === 0 && !questionStartTime) {
+      const now = Date.now();
+      const timer = setTimeout(() => {
+        setQuestionStartTime(now);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [setupCountdown, questionStartTime]);
 
-useEffect(() => {
-  if (setupCountdown === 0 && !questionStartTime) {
-    setQuestionStartTime(Date.now());
-  }
-}, [setupCountdown, questionStartTime]);
+  const handleLockAnswer = async () => {
+    if (!selected || questionTimer <= 0 || isSubmitting) return;
+    setIsSubmitting(true);
 
-const handleLockAnswer = async () => {
-  if (!selected || questionTimer <= 0) return;
-  setIsSubmitting(true);
-
-  try {
     const isCorrect = selected === payload?.correct;
-    
-    // 2. Calculate exact latency in seconds
     const timeTaken = questionStartTime ? (Date.now() - questionStartTime) / 1000 : 0;
+    const qId = gameState?.activeQuestion?.id || 'active_q';
 
     const answerRecord = {
       pin: player.pin,
       name: player.name,
       teamCode: player.teamCode || null,
-      gameMode: gameState.gameMode || 'solo',
+      gameMode: gameState?.gameMode || 'solo',
+      questionId: qId,
       questionText: payload?.question || 'Unknown Question',
       submittedAnswer: selected,
       isCorrect: isCorrect,
-      timeTaken: Number(timeTaken.toFixed(1)), // e.g. 3.4 seconds
+      timeTaken: Number(timeTaken.toFixed(1)),
       timestamp: serverTimestamp()
     };
 
-    await addDoc(collection(db, 'events', 'samarambh', 'answers'), answerRecord);
+    // Store in localStorage immediately so student response is never lost even if device crashes or network drops
+    try {
+      localStorage.setItem(`answer_${player.pin}_${qId}`, JSON.stringify({
+        answer: selected,
+        timeTaken: Number(timeTaken.toFixed(1)),
+        isCorrect
+      }));
+    } catch (e) {
+      console.warn("Local storage write error:", e);
+    }
 
-    if (navigator.vibrate) {
-        navigator.vibrate(50); // Gives the phone a satisfying physical buzz on tap!
-      }
-      
-    setHasSubmitted(true);
-  } catch (error) {
-    console.error("Failed to submit answer:", error);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+    // Immediately reflect locked UI on the student device
+    setLockedAnswer(selected);
+    if (setParentSubmitted) setParentSubmitted(true);
+    if (navigator.vibrate) navigator.vibrate(50);
 
-  // Safe Guard: If payload is missing entirely
+    try {
+      await addDoc(collection(db, 'events', 'samarambh', 'answers'), answerRecord);
+    } catch (error) {
+      console.warn("Direct submission deferred due to network, queuing offline:", error.message);
+      saveToOfflineQueue(answerRecord);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Auto sync queued answers whenever the network reconnects
+  useEffect(() => {
+    const handleOnline = () => {
+      flushOfflineQueue(async (item) => {
+        await addDoc(collection(db, 'events', 'samarambh', 'answers'), {
+          ...item,
+          timestamp: serverTimestamp()
+        });
+      });
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
+
+  // Safe Guard
   if (!payload) {
     return (
-      <div className="min-h-screen bg-black text-red-500 font-mono flex items-center justify-center p-6 text-center">
-        <p>⚠️ Error: Invalid payload received by mobile client.</p>
-      </div>
-    );
-  }
-
-  if (hasSubmitted) {
-    return (
-      <div className="min-h-screen bg-black text-green-400 font-mono flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-24 h-24 bg-gray-900 border-4 border-green-500 rounded-full flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-          <span className="text-4xl">🔒</span>
+      <div className={`min-h-screen flex items-center justify-center p-6 text-center ${
+        isDarkMode ? 'bg-[#0b0f19] text-rose-400' : 'bg-slate-50 text-rose-600'
+      }`}>
+        <div className="max-w-md p-6 bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 rounded-2xl shadow-sm">
+          <AlertCircle className="w-10 h-10 mx-auto mb-3 text-rose-500" />
+          <h2 className="text-base font-bold">Question Unavailable</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Waiting for the host to send the next challenge payload.
+          </p>
         </div>
-        <h1 className="text-3xl font-bold text-white mb-2">Answer Locked!</h1>
-        <p className="text-gray-400 mb-8 uppercase tracking-widest text-sm">Awaiting host clearance...</p>
       </div>
     );
   }
 
+  // 1. PHASE 1: COUNTDOWN / GET READY SCREEN (5 Seconds)
   if (setupCountdown > 0) {
     return (
-      <div className="min-h-screen bg-black text-yellow-400 font-mono flex flex-col items-center justify-center p-6 text-center">
-        <div className="text-8xl font-black mb-6 animate-pulse">{setupCountdown}</div>
-        <h2 className="text-2xl font-bold text-white uppercase tracking-wider mb-2">Get Ready!</h2>
-        <p className="text-gray-500 text-sm">Question deploying across network...</p>
-        <div className="mt-8 border border-gray-800 bg-gray-900 p-4 rounded w-full max-w-xs text-xs text-gray-400 uppercase">
-          Answering Window: {gameState?.activeQuestion?.timeLimit || 20}s
+      <StageCountdown
+        seconds={setupCountdown}
+        maxSeconds={5}
+        mode="mobile"
+        isDarkMode={isDarkMode}
+        onToggleTheme={toggleTheme}
+        badgeText="Next Question Starting"
+        title="Get Ready!"
+        subtitle="Prepare to choose your answer quickly. Accuracy and speed determine your points!"
+        timeWindow={totalTimeLimit}
+        brandName="MCQ Challenge"
+      />
+    );
+  }
+
+  // 2. PHASE 2: SUBMITTED / LOCKED STATE
+  if (lockedAnswer) {
+    return (
+      <div className={`min-h-screen flex flex-col justify-between p-6 transition-colors duration-200 ${
+        isDarkMode ? 'bg-[#0b0f19] text-white' : 'bg-slate-50 text-slate-900'
+      }`}>
+        {/* Top Header */}
+        <div className="max-w-md w-full mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <img 
+              src="/images/logo.jpg" 
+              onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
+              alt="TechArena" 
+              className={`h-9 w-9 rounded-xl object-contain p-1 border shadow-sm ${
+                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+              }`}
+            />
+            <span className="font-extrabold text-sm tracking-tight">
+              Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+            </span>
+          </div>
+
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
+            questionTimer > 5 
+              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800' 
+              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800'
+          }`}>
+            <Clock className="w-3.5 h-3.5" />
+            <span>{questionTimer}s remaining</span>
+          </div>
+        </div>
+
+        {/* Lock Confirmation Card */}
+        <div className="max-w-md w-full mx-auto text-center py-6">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mx-auto mb-4 shadow-sm">
+            <CheckCircle2 className="w-8 h-8" />
+          </div>
+
+          <h1 className="text-2xl font-bold tracking-tight mb-1">
+            Answer Locked!
+          </h1>
+          <p className={`text-xs mb-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            Your answer is saved. Results will appear when the timer ends.
+          </p>
+
+          <div className={`p-4 rounded-2xl border text-left space-y-2 mb-4 ${
+            isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+          }`}>
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+              Your Locked Choice
+            </span>
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                ✓
+              </div>
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                {lockedAnswer}
+              </span>
+            </div>
+          </div>
+
+          <div className={`p-3 rounded-xl border text-xs text-center flex items-center justify-center gap-2 ${
+            isDarkMode ? 'bg-slate-900/40 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
+          }`}>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+            <span>Synced to Host · Awaiting Next Round</span>
+          </div>
+        </div>
+
+        <div className="text-center text-[11px] text-slate-400 pb-2">
+          Samarambh 4.0 · Live Stage
         </div>
       </div>
     );
   }
 
-  // Safely map options, defaulting to an empty array if undefined
+  // 3. PHASE 3: ACTIVE QUESTION ANSWERING
   const optionsList = payload?.options || [];
+  const timePercentage = Math.max(0, Math.min(100, (questionTimer / totalTimeLimit) * 100));
+
+  // Determine timer color state
+  const isTimeCritical = questionTimer <= 5;
+  const isTimeWarning = questionTimer <= 10 && questionTimer > 5;
 
   return (
-    <div className="min-h-screen bg-black text-green-400 font-mono flex flex-col p-6 pt-8">
-      <div className="w-full max-w-md mx-auto">
-        
-        <div className="flex justify-between items-center mb-6 bg-gray-900 p-3 rounded border border-gray-800">
-          <span className="text-red-500 font-bold text-xs uppercase tracking-widest animate-pulse">🔴 LIVE</span>
-          <span className={`font-bold text-sm ${questionTimer <= 5 ? 'text-red-500 animate-bounce' : 'text-yellow-400'}`}>
-            ⏳ {questionTimer}s left
-          </span>
-          <span className="text-gray-400 text-xs uppercase">{gameState?.gameMode}</span>
-        </div>
+    <div className={`min-h-screen flex flex-col justify-between transition-colors duration-200 ${
+      isDarkMode ? 'bg-[#0b0f19] text-white' : 'bg-slate-50 text-slate-900'
+    }`}>
+      
+      {/* Dynamic Animated Progress Bar along the top edge */}
+      <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 overflow-hidden sticky top-0 z-40">
+        <div 
+          className={`h-full transition-all duration-1000 ease-linear ${
+            isTimeCritical 
+              ? 'bg-rose-500' 
+              : isTimeWarning 
+                ? 'bg-amber-500' 
+                : 'bg-indigo-600 dark:bg-indigo-400'
+          }`}
+          style={{ width: `${timePercentage}%` }}
+        />
+      </div>
 
-        <h1 className="text-xl font-bold text-white mb-6 border-l-4 border-cyan-500 pl-4">
-          {payload?.question}
-        </h1>
-        
-        <div className="space-y-3">
-          {optionsList.map((opt, idx) => (
-            <button 
-              key={idx}
-              onClick={() => setSelected(opt)}
-              className={`w-full p-4 rounded border-2 text-left transition-all duration-200 ${
-                selected === opt 
-                ? 'bg-cyan-900 border-cyan-400 text-white shadow-[0_0_15px_rgba(34,211,153,0.3)]' 
-                : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-green-500 hover:text-green-400'
+      {/* TOP HEADER */}
+      <header className={`px-4 py-3 border-b backdrop-blur-md sticky top-1.5 z-30 transition-colors ${
+        isDarkMode ? 'bg-[#0b0f19]/90 border-slate-800' : 'bg-white/90 border-slate-200/80 shadow-sm'
+      }`}>
+        <div className="max-w-md mx-auto flex items-center justify-between gap-3">
+          
+          {/* Logo & Category */}
+          <div className="flex items-center gap-2.5">
+            <img 
+              src="/images/logo.jpg" 
+              onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
+              alt="TechArena" 
+              className={`h-9 w-9 rounded-xl object-contain p-1 border shadow-sm ${
+                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
               }`}
-            >
-              <span className="text-gray-600 mr-4 font-bold">[{idx + 1}]</span>
-              {opt}
-            </button>
-          ))}
-        </div>
+            />
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-sm tracking-tight">
+                  Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                  Live
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {gameState?.gameMode === 'team' ? 'Squad Mode' : 'Solo Arena'}
+              </p>
+            </div>
+          </div>
 
-        {selected && (
-          <div className="mt-6">
-            <button 
-              onClick={handleLockAnswer}
-              disabled={isSubmitting || questionTimer <= 0}
-              className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-600 text-black font-extrabold py-4 rounded uppercase tracking-widest"
+          {/* Timer Badge & Theme Switch */}
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-colors ${
+              isTimeCritical 
+                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-800 animate-pulse' 
+                : isTimeWarning
+                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800'
+                  : isDarkMode
+                    ? 'bg-slate-900 border-slate-800 text-indigo-400'
+                    : 'bg-indigo-50 border-indigo-200 text-indigo-700'
+            }`}>
+              <Clock className="w-3.5 h-3.5" />
+              <span>{questionTimer}s</span>
+            </div>
+
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-xl border transition-colors ${
+                isDarkMode 
+                  ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
+              }`}
+              title="Toggle theme"
             >
-              {isSubmitting ? 'Transmitting...' : 'Lock Answer'}
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
           </div>
-        )}
+        </div>
+      </header>
 
-      </div>
+      {/* QUESTION BODY */}
+      <main className="max-w-md w-full mx-auto px-4 py-5 flex-1 flex flex-col justify-between">
+        <div className="space-y-4">
+          
+          {/* Question Card */}
+          <div className={`p-5 rounded-2xl border transition-all ${
+            isDarkMode 
+              ? 'bg-slate-900/70 border-slate-800' 
+              : 'bg-white border-slate-200/90 shadow-sm'
+          }`}>
+            <div className="flex items-center justify-between text-xs mb-2">
+              <span className={`font-semibold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-md ${
+                isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+              }`}>
+                Question
+              </span>
+              <span className="text-xs text-slate-400 flex items-center gap-1 font-mono">
+                <Zap className="w-3 h-3 text-amber-500" /> Speed Bonus
+              </span>
+            </div>
+
+            <h1 className="text-base md:text-lg font-bold leading-relaxed text-slate-900 dark:text-white">
+              {payload?.question}
+            </h1>
+          </div>
+
+          {/* Options Grid */}
+          <div className="space-y-2.5">
+            {optionsList.map((opt, idx) => {
+              const isSelected = selected === opt;
+              const badge = OPTION_BADGES[idx % OPTION_BADGES.length];
+
+              return (
+                <button 
+                  key={idx}
+                  onClick={() => setSelected(opt)}
+                  disabled={isSubmitting || questionTimer <= 0}
+                  className={`w-full p-3.5 md:p-4 rounded-xl border text-left transition-all flex items-center justify-between group active:scale-[0.99] min-h-[56px] ${
+                    isSelected 
+                      ? (isDarkMode 
+                          ? 'bg-indigo-950/40 border-indigo-500 ring-2 ring-indigo-500/50 text-white' 
+                          : 'bg-indigo-50/80 border-indigo-600 ring-2 ring-indigo-500/30 text-indigo-950 shadow-sm')
+                      : (isDarkMode 
+                          ? 'bg-slate-900/60 border-slate-800 text-slate-200 hover:border-slate-700 hover:bg-slate-900' 
+                          : 'bg-white border-slate-200 text-slate-800 hover:border-indigo-300 hover:bg-slate-50/80 shadow-sm')
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0 pr-2">
+                    <span className={`w-7 h-7 rounded-lg border flex items-center justify-center text-xs font-bold shrink-0 transition-transform ${
+                      isSelected 
+                        ? 'bg-indigo-600 text-white border-indigo-600 scale-105' 
+                        : badge.bg
+                    }`}>
+                      {badge.label}
+                    </span>
+                    <span className="text-sm font-medium leading-snug break-words">
+                      {opt}
+                    </span>
+                  </div>
+
+                  <div className="shrink-0 pl-1">
+                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                      isSelected 
+                        ? 'bg-indigo-600 border-indigo-600 text-white' 
+                        : (isDarkMode ? 'border-slate-700' : 'border-slate-300')
+                    }`}>
+                      {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* BOTTOM SUBMISSION ACTION */}
+        <div className="pt-5 pb-3">
+          <button 
+            onClick={handleLockAnswer}
+            disabled={!selected || isSubmitting || questionTimer <= 0}
+            className={`w-full py-3.5 px-4 rounded-xl font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2 shadow-sm ${
+              selected && questionTimer > 0 && !isSubmitting
+                ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/25 active:scale-95 cursor-pointer'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-transparent'
+            }`}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Recording Answer...</span>
+              </>
+            ) : selected ? (
+              <>
+                <Lock className="w-4 h-4" />
+                <span>Lock In Answer</span>
+              </>
+            ) : (
+              <span>Select an Option Above</span>
+            )}
+          </button>
+        </div>
+      </main>
+
     </div>
   );
 }
