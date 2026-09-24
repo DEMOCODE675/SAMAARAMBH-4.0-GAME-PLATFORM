@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon, Clock, Zap, Shield, Sparkles } from 'lucide-react';
+import { Sun, Moon, Clock, Zap, Sparkles } from 'lucide-react';
 
 /**
  * StageCountdown - High impact, modern, cinematic countdown component
@@ -20,7 +20,6 @@ export default function StageCountdown({
   brandName = 'Samarambh 4.0'
 }) {
   const progressRatio = Math.max(0, Math.min(1, seconds / maxSeconds));
-  const strokeDashoffset = 100 - (progressRatio * 100);
 
   // PROJECTOR CINEMA VIEW
   if (mode === 'projector') {

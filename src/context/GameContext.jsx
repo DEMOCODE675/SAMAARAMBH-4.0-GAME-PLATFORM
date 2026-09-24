@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { db } from '../config/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { flushOfflineQueue } from '../utils/offlineSync';
 
 export const GameContext = createContext();
 
@@ -13,8 +14,16 @@ export function GameProvider({ children }) {
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
+    const handleOnline = () => {
+      setIsOnline(true);
+      flushOfflineQueue();
+    };
     const handleOffline = () => setIsOnline(false);
+
+    // Initial flush if device starts online
+    if (navigator.onLine) {
+      flushOfflineQueue();
+    }
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);

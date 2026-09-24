@@ -1,6 +1,8 @@
-// Offline and network synchronization queue helper
-// Stores answers in IndexedDB/localStorage when network drops and retries with exponential backoff
+import { db } from '../config/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
+// Offline and network synchronization queue helper
+// Stores answers in localStorage when network drops and retries with exponential resilience
 const QUEUE_STORAGE_KEY = 'techarena_offline_queue';
 
 export function getOfflineQueue() {
@@ -40,17 +42,49 @@ export function removeFromOfflineQueue(indexOrPredicate) {
   }
 }
 
+// Submits answer using a deterministic document ID to guarantee idempotency and zero duplicates
+export async function submitAnswerRecord(answerRecord) {
+  const qId = answerRecord.questionId || 'unknown_q';
+  const pin = answerRecord.pin || answerRecord.playerPin || 'anonymous';
+  const docId = `${qId}_${pin}`;
+  const answerRef = doc(db, 'events', 'samarambh', 'answers', docId);
+
+  try {
+    await setDoc(answerRef, {
+      ...answerRecord,
+      timestamp: serverTimestamp()
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn("Direct answer submission deferred, storing in offline buffer:", err.message);
+    saveToOfflineQueue(answerRecord);
+    return false;
+  }
+}
+
 // Background sync worker that flushes queued items once connection returns
-export async function flushOfflineQueue(submitFn) {
+export async function flushOfflineQueue(customSubmitFn) {
   const queue = getOfflineQueue();
   if (!queue.length) return;
 
   const remaining = [];
   for (const item of queue) {
     try {
-      await submitFn(item);
+      if (typeof customSubmitFn === 'function') {
+        await customSubmitFn(item);
+      } else {
+        const qId = item.questionId || 'unknown_q';
+        const pin = item.pin || item.playerPin || 'anonymous';
+        const docId = `${qId}_${pin}`;
+        const answerRef = doc(db, 'events', 'samarambh', 'answers', docId);
+
+        await setDoc(answerRef, {
+          ...item,
+          timestamp: serverTimestamp()
+        }, { merge: true });
+      }
     } catch (err) {
-      console.warn("Failed to sync queued answer, keeping in retry buffer:", err);
+      console.warn("Failed to sync queued answer, retaining in retry buffer:", err);
       remaining.push(item);
     }
   }

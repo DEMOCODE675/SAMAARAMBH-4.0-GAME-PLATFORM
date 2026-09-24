@@ -169,17 +169,12 @@ export default function ProjectorView() {
       return () => clearTimeout(timer);
     }
 
-    const qText = gameState.activeQuestion.question || 
-                  gameState.activeQuestion.payload?.question || 
-                  gameState.activeQuestion.payload?.prompt || 
-                  gameState.activeQuestion.payload?.missionText ||
-                  gameState.activeQuestion.payload?.puzzleText;
-
-    if (!qText) return;
+    const qId = gameState.activeQuestion.id;
+    if (!qId) return;
 
     try {
       const answersRef = collection(db, 'events', 'samarambh', 'answers');
-      const q = query(answersRef, where("questionText", "==", qText));
+      const q = query(answersRef, where("questionId", "==", qId));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         setSubmissionCount(snapshot.size);
       }, (err) => console.warn("Answers count error:", err));
@@ -199,17 +194,17 @@ export default function ProjectorView() {
 
     const updateTimers = () => {
       const nowMs = Date.now();
-      const elapsedSeconds = Math.floor((nowMs - updatedAtMs) / 1000);
+      const elapsedSeconds = Math.max(0, Math.floor((nowMs - updatedAtMs) / 1000));
+      const remainingSetup = Math.min(5, Math.max(0, 5 - elapsedSeconds));
 
-      const remainingSetup = 5 - elapsedSeconds;
       if (remainingSetup > 0) {
         setSetupCountdown(remainingSetup);
         setQuestionTimer(questionDuration); 
       } else {
         setSetupCountdown(0);
         const activeElapsed = elapsedSeconds - 5;
-        const remainingQuestionTime = questionDuration - activeElapsed;
-        setQuestionTimer(remainingQuestionTime <= 0 ? 0 : remainingQuestionTime);
+        const remainingQuestionTime = Math.max(0, questionDuration - activeElapsed);
+        setQuestionTimer(remainingQuestionTime);
       }
     };
 

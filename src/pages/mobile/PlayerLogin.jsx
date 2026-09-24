@@ -30,7 +30,7 @@ export default function PlayerLogin() {
 
     try {
       if (isReturningUser) {
-        if (!inputValue.trim()) throw new Error("Enter your 4-digit Login Code");
+        if (!inputValue.trim()) throw new Error("Enter your Login Code");
         await signInWithPin(inputValue.trim());
       } else {
         if (inputValue.trim().length < 2) throw new Error("Name is too short");
@@ -142,10 +142,10 @@ export default function PlayerLogin() {
                     <input 
                       type={isReturningUser ? "text" : "text"}
                       inputMode={isReturningUser ? "numeric" : "text"}
-                      maxLength={isReturningUser ? 4 : 24}
+                      maxLength={isReturningUser ? 6 : 24}
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      placeholder={isReturningUser ? "• • • •" : "e.g. Nancy"}
+                      placeholder={isReturningUser ? "• • • • • •" : "e.g. Nancy"}
                       autoFocus
                       className={`w-full rounded-2xl px-4 py-3.5 text-base font-semibold outline-none border transition-all ${
                         isReturningUser 

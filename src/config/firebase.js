@@ -8,13 +8,15 @@ import {
 import { getAuth } from "firebase/auth";
 
 
+const appletConfig = typeof window !== 'undefined' && window.firebaseAppletConfig ? window.firebaseAppletConfig : null;
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseAppletConfig?.apiKey,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseAppletConfig?.authDomain,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseAppletConfig?.projectId,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseAppletConfig?.storageBucket,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseAppletConfig?.messagingSenderId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseAppletConfig?.appId
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || appletConfig?.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || appletConfig?.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || appletConfig?.projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || appletConfig?.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || appletConfig?.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || appletConfig?.appId
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -28,8 +30,8 @@ try {
       tabManager: persistentMultipleTabManager()
     })
   }, databaseId || undefined);
-} catch (err) {
-  // If already initialized or fallback
+} catch {
+  // If already initialized or fallback for restricted storage environments
   firestoreInstance = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
 }
 

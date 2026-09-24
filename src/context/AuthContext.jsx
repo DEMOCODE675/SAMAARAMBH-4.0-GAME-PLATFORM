@@ -11,7 +11,7 @@ const ensureAuthSession = async () => {
     const cred = await signInAnonymously(auth);
     return cred.user.uid;
   } catch (error) {
-    // Graceful fallback when Firebase Auth Anonymous provider is disabled or restricted
+    // Graceful fallback when Firebase Auth Anonymous provider is restricted
     console.warn("Anonymous sign-in unavailable, using client session UID:", error.message);
     let storedUid = localStorage.getItem('techarena_uid');
     if (!storedUid) {
@@ -22,61 +22,89 @@ const ensureAuthSession = async () => {
   }
 };
 
+// Generates a collision-resistant 6-digit PIN with existence verification
+const generateUniquePin = async () => {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = Math.floor(100000 + Math.random() * 900000).toString();
+    try {
+      const snap = await getDoc(doc(db, 'players', candidate));
+      if (!snap.exists()) {
+        return candidate;
+      }
+    } catch {
+      // In case of read restriction, return candidate
+      return candidate;
+    }
+  }
+  // Fallback high-entropy code if 6-digit space encounters high contention
+  return 'P' + Math.floor(100000 + Math.random() * 900000).toString();
+};
+
 export function AuthProvider({ children }) {
+  const [currentPin, setCurrentPin] = useState(() => {
+    return localStorage.getItem('techarena_pin') || null;
+  });
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if they already have a PIN saved in their browser on mount
+  // Maintain active real-time listener for current player profile
   useEffect(() => {
-    let unsubscribePlayer = null;
-
-    const checkLocalSession = async () => {
-      const savedPin = localStorage.getItem('techarena_pin');
-      if (savedPin) {
-        try {
-          await ensureAuthSession();
-          const playerRef = doc(db, 'players', savedPin);
-          const docSnap = await getDoc(playerRef);
-
-          if (docSnap.exists()) {
-            // Attach a real-time listener to keep player data (like teamCode and score) synced
-            unsubscribePlayer = onSnapshot(playerRef, (docSnapshot) => {
-              if (docSnapshot.exists()) {
-                setPlayer(docSnapshot.data());
-              }
-            }, (err) => {
-              console.warn("Player session listener error:", err.message);
-            });
-          } else {
-            localStorage.removeItem('techarena_pin');
-          }
-        } catch (error) {
-          console.error("Session recovery failed:", error);
-          localStorage.removeItem('techarena_pin');
-        }
-      }
+    if (!currentPin) {
+      setPlayer(null);
       setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    let unsubscribe = null;
+
+    const setupPlayerListener = async () => {
+      try {
+        await ensureAuthSession();
+        const playerRef = doc(db, 'players', currentPin);
+        
+        unsubscribe = onSnapshot(playerRef, (docSnap) => {
+          if (!isMounted) return;
+          if (docSnap.exists()) {
+            setPlayer({ id: docSnap.id, ...docSnap.data() });
+          } else {
+            console.warn("Player PIN not found in database, clearing session.");
+            localStorage.removeItem('techarena_pin');
+            setPlayer(null);
+            setCurrentPin(null);
+          }
+          setLoading(false);
+        }, (err) => {
+          console.warn("Player session snapshot error:", err.message);
+          if (isMounted) setLoading(false);
+        });
+      } catch (err) {
+        console.error("Failed to initialize player session:", err);
+        if (isMounted) setLoading(false);
+      }
     };
 
-    checkLocalSession();
+    setupPlayerListener();
 
     return () => {
-      if (unsubscribePlayer) unsubscribePlayer();
+      isMounted = false;
+      if (unsubscribe) unsubscribe();
     };
-  }, []);
+  }, [currentPin]);
 
-  // Generate a new PIN for a new student
+  // Register new player with unique 6-digit PIN and immediate listener attachment
   const registerNewPlayer = async (name) => {
     try {
       const uid = await ensureAuthSession();
-      const pin = Math.floor(1000 + Math.random() * 9000).toString(); // e.g. "8392"
+      const pin = await generateUniquePin();
 
       const playerRef = doc(db, 'players', pin);
       const playerData = {
-        name: name,
+        name: name.trim(),
         pin: pin,
         uid: uid,
         teamCode: null,
+        teamName: null,
         score: 0,
         createdAt: serverTimestamp()
       };
@@ -84,6 +112,7 @@ export function AuthProvider({ children }) {
       await setDoc(playerRef, playerData);
       localStorage.setItem('techarena_pin', pin);
       setPlayer(playerData);
+      setCurrentPin(pin);
       return pin;
     } catch (error) {
       console.error("Registration failed:", error);
@@ -91,31 +120,34 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Let them log in or reconnect using their PIN
-  const signInWithPin = async (pin) => {
+  // Sign in with PIN (supports both legacy 4-digit and modern 6-digit PINs)
+  const signInWithPin = async (rawPin) => {
+    const pin = (rawPin || '').trim();
+    if (!pin) throw new Error("Please enter your PIN code.");
+
     try {
       await ensureAuthSession();
       const playerRef = doc(db, 'players', pin);
       const docSnap = await getDoc(playerRef);
 
       if (docSnap.exists()) {
-        const playerData = docSnap.data();
+        const playerData = { id: docSnap.id, ...docSnap.data() };
         localStorage.setItem('techarena_pin', pin);
         setPlayer(playerData);
+        setCurrentPin(pin);
         return playerData;
       } else {
-        throw new Error("PIN not found. Try registering again.");
+        throw new Error("PIN not found. Please verify or register anew.");
       }
     } catch (error) {
-      localStorage.removeItem('techarena_pin');
+      console.warn("Sign-in verification failed:", error.message);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
   const logout = () => {
     localStorage.removeItem('techarena_pin');
+    setCurrentPin(null);
     setPlayer(null);
   };
 
