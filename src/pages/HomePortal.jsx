@@ -30,8 +30,6 @@ export default function HomePortal() {
       to: '/play',
       badge: 'Contestant Terminal',
       title: 'Player Controller',
-      subtitle: 'Compete solo or in squad, answer live arena challenges & earn speed multipliers.',
-      device: 'Optimized for Mobile',
       actionLabel: 'Enter Arena',
       icon: Smartphone,
       accent: {
@@ -46,8 +44,6 @@ export default function HomePortal() {
       to: '/projector',
       badge: 'Auditorium Display',
       title: 'Stage Projector',
-      subtitle: 'Cinema-grade screen for live broadcasts, incoming countdowns & animated rank shifts.',
-      device: 'Optimized for 16:9 Projection',
       actionLabel: 'Launch Screen',
       icon: Tv,
       accent: {
@@ -62,8 +58,6 @@ export default function HomePortal() {
       to: '/admin',
       badge: 'Mission Operator',
       title: 'Control Center',
-      subtitle: 'Author questions in the CMS, broadcast live rounds & tabulate leaderboard points.',
-      device: 'Operator & Staff Only',
       actionLabel: 'Open Dashboard',
       icon: Sliders,
       accent: {
@@ -103,25 +97,13 @@ export default function HomePortal() {
               <span className="font-black text-lg tracking-tight">
                 Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
               </span>
-              <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold">
-                v4.0
-              </span>
+              
             </div>
-            <p className="text-[11px] text-slate-500">Samarambh Live Interactive Platform</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold backdrop-blur-sm shadow-sm"
-               style={{
-                 backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.7)' : 'rgba(255, 255, 255, 0.8)',
-                 borderColor: isDarkMode ? '#1e293b' : '#e2e8f0'
-               }}>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className={isDarkMode ? 'text-slate-300 font-mono text-[11px]' : 'text-slate-600 font-mono text-[11px]'}>
-              STAGE SYNC: ONLINE
-            </span>
-          </div>
+          
 
           <button
             onClick={toggleTheme}
@@ -140,24 +122,10 @@ export default function HomePortal() {
       {/* Main Hero & Portal Grid */}
       <main className="relative z-10 w-full max-w-6xl mx-auto px-6 py-8 md:py-12 my-auto">
         <div className="text-center max-w-2xl mx-auto mb-10 md:mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider mb-4 shadow-sm"
-               style={{
-                 backgroundColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : '#f1f5f9',
-                 borderColor: isDarkMode ? '#334155' : '#cbd5e1',
-                 color: isDarkMode ? '#cbd5e1' : '#475569'
-               }}>
-            <Radio className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
-            <span>Select Destination</span>
-          </div>
 
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-3">
             Choose Your Portal
           </h1>
-          <p className={`text-sm sm:text-base leading-relaxed ${
-            isDarkMode ? 'text-slate-400' : 'text-slate-600'
-          }`}>
-            Connect to the live TechArena session as a contestant, stage display, or event administrator.
-          </p>
         </div>
 
         {/* 3 Portal Cards */}
@@ -201,18 +169,12 @@ export default function HomePortal() {
                       <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover:text-white transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
                     </h2>
 
-                    <p className={`text-xs sm:text-sm leading-relaxed mb-6 font-normal ${
-                      isDarkMode ? 'text-slate-400' : 'text-slate-600'
-                    }`}>
-                      {portal.subtitle}
-                    </p>
+                    
                   </div>
 
                   {/* Card Bottom: Device Pill + Action Button */}
-                  <div className="pt-4 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-3">
-                    <span className="text-[11px] font-medium text-slate-400">
-                      {portal.device}
-                    </span>
+                  <div className="pt-5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between ">
+                   
 
                     <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${portal.accent.button}`}>
                       <span>{portal.actionLabel}</span>
@@ -228,19 +190,12 @@ export default function HomePortal() {
 
       {/* Footer */}
       <footer className="relative z-10 w-full max-w-6xl mx-auto px-6 py-6 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
-        <div className="flex items-center gap-2">
-          <Zap className="w-3.5 h-3.5 text-amber-500" />
-          <span className="font-semibold text-slate-300">Samarambh 4.0</span>
-          <span>· High Velocity Live Stage & Quiz Engine</span>
+        <div className="flex items-center gap-2 text-center sm:text-left">
+          <span className="font-semibold text-slate-300">MLSA miet</span>
+          <span>© 2026 All Rights Reserved</span>
         </div>
 
-        <div className="flex items-center gap-4 text-[11px] font-mono">
-          <Link to="/play" className="hover:text-indigo-400 transition-colors">/play</Link>
-          <span>·</span>
-          <Link to="/projector" className="hover:text-amber-400 transition-colors">/projector</Link>
-          <span>·</span>
-          <Link to="/admin" className="hover:text-rose-400 transition-colors">/admin</Link>
-        </div>
+       
       </footer>
     </div>
   );
