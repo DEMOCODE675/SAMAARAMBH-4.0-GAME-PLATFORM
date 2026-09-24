@@ -97,7 +97,14 @@ export default function PlayerRoundReview({ player }) {
 
       <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs flex justify-between items-center">
         <span className="text-slate-500 dark:text-slate-400">Your Answer:</span>
-        <span className="font-bold text-slate-900 dark:text-white">{lastAnswer.submittedAnswer}</span>
+        <span className="font-bold text-slate-900 dark:text-white">{lastAnswer.submittedAnswer || lastAnswer.answer}</span>
+      </div>
+
+      <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs flex justify-between items-center mt-2">
+        <span className="text-slate-500 dark:text-slate-400">Points Awarded:</span>
+        <span className={`font-bold ${lastAnswer.isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+          {lastAnswer.isCorrect ? `+${(lastAnswer.pointsAwarded || 1000).toLocaleString()} pts` : '0 pts'}
+        </span>
       </div>
 
       {isPhishingRound && lastAnswer.explanation && (

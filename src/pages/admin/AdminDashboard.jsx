@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../config/firebase';
-import { collection, addDoc, serverTimestamp, getDocs, doc, setDoc, updateDoc, onSnapshot, writeBatch, increment, query, where } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, doc, setDoc, updateDoc, onSnapshot, increment, query, where } from 'firebase/firestore';
 import { 
   ShieldAlert, 
   Terminal, 
@@ -186,7 +186,7 @@ export default function AdminDashboard() {
 
       const activeQ = liveState.activeQuestion;
       const qId = activeQ.id;
-      const correctVal = activeQ.payload.correctAnswer || activeQ.payload.correctCommand;
+      const correctVal = activeQ.payload?.correctAnswer || activeQ.payload?.correctCommand || activeQ.payload?.correct || activeQ.payload?.answer || '';
 
       // 1. Query submitted answers for this active challenge
       const answersSnap = await getDocs(
@@ -201,39 +201,55 @@ export default function AdminDashboard() {
 
       answersSnap.forEach((ansDoc) => {
         const data = ansDoc.data();
-        const pPin = data.playerPin;
-        const answerText = (data.answer || '').toString().trim().toLowerCase();
+        const pPin = data.pin || data.playerPin;
+        const answerText = (data.submittedAnswer || data.answer || '').toString().trim().toLowerCase();
         const targetCorrect = (correctVal || '').toString().trim().toLowerCase();
+        const teamCode = data.teamCode || null;
 
         if (pPin && !scoredPlayers.has(pPin)) {
           scoredPlayers.add(pPin);
-          if (answerText === targetCorrect) {
-            // Speed calculation: Faster answers receive higher point bonuses
-            const elapsed = data.elapsedSeconds !== undefined ? Number(data.elapsedSeconds) : (activeQ.timeLimit || 20);
+          
+          if (data.pointsAwarded && data.pointsAwarded > 0) {
+            updates.push({
+              pin: pPin,
+              teamCode,
+              points: data.pointsAwarded,
+              alreadyAwarded: true
+            });
+          } else if (data.isCorrect || (targetCorrect && answerText === targetCorrect)) {
+            const elapsed = data.timeTaken !== undefined ? Number(data.timeTaken) : (data.elapsedSeconds !== undefined ? Number(data.elapsedSeconds) : (activeQ.timeLimit || 20));
             const totalLimit = activeQ.timeLimit || 20;
-            const speedBonus = Math.max(0, Math.round(((totalLimit - elapsed) / totalLimit) * 500));
+            const speedBonus = Math.max(0, Math.round(((totalLimit - Math.min(totalLimit, elapsed)) / totalLimit) * 500));
             const totalPointsAwarded = 1000 + speedBonus;
 
             updates.push({
               pin: pPin,
-              points: totalPointsAwarded
+              teamCode,
+              points: totalPointsAwarded,
+              alreadyAwarded: false
             });
           }
         }
       });
 
-      // 2. Commit batch updates in chunks to avoid Firestore 500-write limit
-      const CHUNK_SIZE = 400;
-      for (let i = 0; i < updates.length; i += CHUNK_SIZE) {
-        const chunk = updates.slice(i, i + CHUNK_SIZE);
-        const batch = writeBatch(db);
-        chunk.forEach(u => {
-          const playerRef = doc(db, 'events', 'samarambh', 'participants', u.pin);
-          batch.update(playerRef, {
-            score: increment(u.points)
-          });
-        });
-        await batch.commit();
+      // 2. Commit updates to players and teams in Firestore
+      for (const u of updates) {
+        if (!u.alreadyAwarded) {
+          try {
+            const playerRef = doc(db, 'players', u.pin);
+            await updateDoc(playerRef, {
+              score: increment(u.points)
+            });
+            if (u.teamCode) {
+              const teamRef = doc(db, 'events', 'samarambh', 'teams', u.teamCode);
+              await updateDoc(teamRef, {
+                totalScore: increment(u.points)
+              });
+            }
+          } catch (e) {
+            console.warn("Player score update error in stop game:", e);
+          }
+        }
       }
 
       // 3. Switch Stage Display to Leaderboard

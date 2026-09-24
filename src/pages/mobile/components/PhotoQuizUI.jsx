@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../config/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { saveToOfflineQueue, flushOfflineQueue } from '../../../utils/offlineSync';
 import { 
   Check, 
@@ -15,6 +15,30 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import StageCountdown from '../../../components/StageCountdown';
+
+const checkPhotoMatch = (selected, target, options) => {
+  if (!selected || !target) return false;
+  const s = String(selected).trim().toLowerCase();
+  const t = String(target).trim().toLowerCase();
+  if (s === t) return true;
+
+  const letterMap = ['a', 'b', 'c', 'd', 'e', 'f'];
+  const targetIndex = letterMap.indexOf(t);
+  if (targetIndex !== -1 && options && options[targetIndex]) {
+    if (String(options[targetIndex]).trim().toLowerCase() === s) return true;
+  }
+
+  const selectedIndex = letterMap.indexOf(s);
+  if (selectedIndex !== -1 && options && options[selectedIndex]) {
+    if (String(options[selectedIndex]).trim().toLowerCase() === t) return true;
+  }
+
+  const cleanS = s.replace(/^[a-f0-9][.)\-:\s]+/i, '').trim();
+  const cleanT = t.replace(/^[a-f0-9][.)\-:\s]+/i, '').trim();
+  if (cleanS && cleanS === cleanT) return true;
+
+  return false;
+};
 
 const OPTION_BADGES = [
   { label: 'A', bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/60' },
@@ -105,37 +129,78 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
     if (!selected || questionTimer <= 0 || isSubmitting) return;
     setIsSubmitting(true);
 
-    const isCorrect = selected.trim().toLowerCase() === (payload?.correct || '').trim().toLowerCase();
-    const timeTaken = questionStartTime ? (Date.now() - questionStartTime) / 1000 : 0;
+    const targetCorrect = payload?.correctAnswer || payload?.correct || payload?.answer || '';
+    const isCorrect = checkPhotoMatch(selected, targetCorrect, optionsList);
+    const timeTaken = questionStartTime ? Math.max(0, (Date.now() - questionStartTime) / 1000) : 0;
     const qId = questionId || 'photo_q';
+
+    const totalLimit = totalTimeLimit || 30;
+    const speedBonus = isCorrect ? Math.max(0, Math.round(((totalLimit - Math.min(totalLimit, timeTaken)) / totalLimit) * 500)) : 0;
+    const pointsAwarded = isCorrect ? (1000 + speedBonus) : 0;
 
     const answerRecord = {
       pin: player.pin,
+      playerPin: player.pin,
       name: player.name,
+      playerName: player.name,
       teamCode: player.teamCode || null,
       gameMode: gameState?.gameMode || 'solo',
       questionId: qId,
       questionType: gameState?.activeQuestion?.type || 'photo_recognize',
       questionText: payload?.prompt || 'Threat Analysis Challenge',
       submittedAnswer: selected.trim(),
+      answer: selected.trim(),
       isCorrect: isCorrect,
+      pointsAwarded: pointsAwarded,
       explanation: payload?.explanation || '',
       timeTaken: Number(timeTaken.toFixed(1)),
+      elapsedSeconds: Number(timeTaken.toFixed(1)),
       timestamp: serverTimestamp()
     };
 
     try {
       localStorage.setItem(`answer_${player.pin}_${qId}`, JSON.stringify({
         answer: selected.trim(),
-        isCorrect
+        timeTaken: Number(timeTaken.toFixed(1)),
+        isCorrect,
+        pointsAwarded
       }));
       localStorage.setItem(`submitted_${player.pin}_${qId}`, 'true');
     } catch (e) {
       console.warn("Local storage write error:", e);
     }
 
+    // Immediately award points in Firestore to player doc and squad
+    if (pointsAwarded > 0 && player?.pin) {
+      try {
+        const playerRef = doc(db, 'players', player.pin);
+        await updateDoc(playerRef, {
+          score: increment(pointsAwarded)
+        });
+      } catch (scoreErr) {
+        console.warn("Direct player score increment error:", scoreErr);
+      }
+
+      if (player.teamCode) {
+        try {
+          const teamRef = doc(db, 'events', 'samarambh', 'teams', player.teamCode);
+          await updateDoc(teamRef, {
+            totalScore: increment(pointsAwarded)
+          });
+        } catch (teamScoreErr) {
+          console.warn("Direct team score increment error:", teamScoreErr);
+        }
+      }
+    }
+
     if (navigator.vibrate) navigator.vibrate(50);
-    setLockedAnswer(selected);
+    const lockedInfo = {
+      selected: selected.trim(),
+      isCorrect,
+      pointsAwarded,
+      timeTaken: Number(timeTaken.toFixed(1))
+    };
+    setLockedAnswer(lockedInfo);
     if (setParentSubmitted) setParentSubmitted(true);
 
     try {
@@ -191,6 +256,10 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
 
   // 2. LOCKED STATE
   if (lockedAnswer) {
+    const selectedVerdict = typeof lockedAnswer === 'object' ? lockedAnswer.selected : lockedAnswer;
+    const isAnswerCorrect = typeof lockedAnswer === 'object' ? lockedAnswer.isCorrect : false;
+    const pointsGained = typeof lockedAnswer === 'object' ? (lockedAnswer.pointsAwarded || 0) : 0;
+
     return (
       <div className={`min-h-screen flex flex-col justify-between p-6 transition-colors duration-200 ${
         isDarkMode ? 'bg-[#0b0f19] text-white' : 'bg-slate-50 text-slate-900'
@@ -221,16 +290,39 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
         </div>
 
         <div className="max-w-md w-full mx-auto text-center py-6">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mx-auto mb-4 shadow-sm">
+          <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto mb-4 shadow-sm ${
+            isAnswerCorrect 
+              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' 
+              : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
+          }`}>
             <CheckCircle2 className="w-8 h-8" />
           </div>
 
           <h1 className="text-2xl font-bold tracking-tight mb-1">
             Verdict Submitted!
           </h1>
-          <p className={`text-xs mb-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+          <p className={`text-xs mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
             Your inspection analysis is locked. Results will reveal once time expires.
           </p>
+
+          {/* Points Earned Banner */}
+          {isAnswerCorrect ? (
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 mb-4 shadow-sm">
+              <div className="flex items-center justify-center gap-2 font-black text-base">
+                <Sparkles className="w-5 h-5 text-emerald-500" />
+                <span>+{pointsGained.toLocaleString()} Points Earned!</span>
+              </div>
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-300/80 mt-0.5">
+                Threat verdict accurate with speed bonus!
+              </p>
+            </div>
+          ) : (
+            <div className={`p-3 rounded-xl border text-xs mb-4 ${
+              isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
+            }`}>
+              <span>Verdict locked · Awaiting host round resolution</span>
+            </div>
+          )}
 
           <div className={`p-4 rounded-2xl border text-left space-y-2 mb-4 ${
             isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
@@ -243,7 +335,7 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
                 ✓
               </div>
               <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                {lockedAnswer}
+                {selectedVerdict}
               </span>
             </div>
           </div>

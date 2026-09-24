@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../config/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { saveToOfflineQueue, flushOfflineQueue } from '../../../utils/offlineSync';
 import { 
   CheckCircle2, 
@@ -11,6 +11,13 @@ import {
   Send 
 } from 'lucide-react';
 import StageCountdown from '../../../components/StageCountdown';
+
+const checkPuzzleMatch = (input, target) => {
+  if (!input || !target) return false;
+  const i = String(input).trim().toLowerCase();
+  const t = String(target).trim().toLowerCase();
+  return i === t;
+};
 
 export default function PuzzleUI({ player, gameState, setHasSubmitted: setParentSubmitted }) {
   const [answerInput, setAnswerInput] = useState('');
@@ -64,33 +71,78 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
     if (!answerInput.trim() || questionTimer <= 0 || isSubmitting) return;
     setIsSubmitting(true);
 
-    const isCorrect = answerInput.trim().toLowerCase() === (payload.correct || '').trim().toLowerCase();
+    const targetCorrect = payload.correctAnswer || payload.correct || payload.answer || '';
+    const isCorrect = checkPuzzleMatch(answerInput, targetCorrect);
     const qId = gameState?.activeQuestion?.id || 'puzzle_q';
     const submittedVal = answerInput.trim();
 
+    const totalLimit = totalTimeLimit || 25;
+    const timeTaken = Math.max(0, totalLimit - questionTimer);
+    const speedBonus = isCorrect ? Math.max(0, Math.round(((totalLimit - Math.min(totalLimit, timeTaken)) / totalLimit) * 500)) : 0;
+    const pointsAwarded = isCorrect ? (1000 + speedBonus) : 0;
+
     const answerRecord = {
       pin: player.pin,
+      playerPin: player.pin,
       name: player.name,
+      playerName: player.name,
       teamCode: player.teamCode || null,
       gameMode: gameState?.gameMode || 'solo',
       questionId: qId,
+      questionType: gameState?.activeQuestion?.type || 'logic_puzzle',
       questionText: payload.puzzleText || 'Logic Riddle Challenge',
       submittedAnswer: submittedVal,
+      answer: submittedVal,
       isCorrect: isCorrect,
+      pointsAwarded: pointsAwarded,
+      timeTaken: Number(timeTaken.toFixed(1)),
+      elapsedSeconds: Number(timeTaken.toFixed(1)),
       timestamp: serverTimestamp()
     };
 
     try {
       localStorage.setItem(`answer_${player.pin}_${qId}`, JSON.stringify({
         answer: submittedVal,
-        isCorrect
+        timeTaken: Number(timeTaken.toFixed(1)),
+        isCorrect,
+        pointsAwarded
       }));
+      localStorage.setItem(`submitted_${player.pin}_${qId}`, 'true');
     } catch (err) {
       console.warn("Local storage write error:", err);
     }
 
+    // Immediately award points in Firestore to player doc and squad
+    if (pointsAwarded > 0 && player?.pin) {
+      try {
+        const playerRef = doc(db, 'players', player.pin);
+        await updateDoc(playerRef, {
+          score: increment(pointsAwarded)
+        });
+      } catch (scoreErr) {
+        console.warn("Direct player score increment error:", scoreErr);
+      }
+
+      if (player.teamCode) {
+        try {
+          const teamRef = doc(db, 'events', 'samarambh', 'teams', player.teamCode);
+          await updateDoc(teamRef, {
+            totalScore: increment(pointsAwarded)
+          });
+        } catch (teamScoreErr) {
+          console.warn("Direct team score increment error:", teamScoreErr);
+        }
+      }
+    }
+
     if (navigator.vibrate) navigator.vibrate(50);
-    setLockedAnswer(submittedVal);
+    const lockedInfo = {
+      submittedVal,
+      isCorrect,
+      pointsAwarded,
+      timeTaken: Number(timeTaken.toFixed(1))
+    };
+    setLockedAnswer(lockedInfo);
     if (setParentSubmitted) setParentSubmitted(true);
 
     try {
@@ -137,6 +189,10 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
 
   // 2. LOCKED STATE
   if (lockedAnswer) {
+    const solutionText = typeof lockedAnswer === 'object' ? lockedAnswer.submittedVal : lockedAnswer;
+    const isAnswerCorrect = typeof lockedAnswer === 'object' ? lockedAnswer.isCorrect : false;
+    const pointsGained = typeof lockedAnswer === 'object' ? (lockedAnswer.pointsAwarded || 0) : 0;
+
     return (
       <div className={`min-h-screen flex flex-col justify-between p-6 transition-colors duration-200 ${
         isDarkMode ? 'bg-[#0b0f19] text-white' : 'bg-slate-50 text-slate-900'
@@ -167,16 +223,39 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
         </div>
 
         <div className="max-w-md w-full mx-auto text-center py-6">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mx-auto mb-4 shadow-sm">
+          <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto mb-4 shadow-sm ${
+            isAnswerCorrect 
+              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' 
+              : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
+          }`}>
             <CheckCircle2 className="w-8 h-8" />
           </div>
 
           <h1 className="text-2xl font-bold tracking-tight mb-1">
             Solution Locked!
           </h1>
-          <p className={`text-xs mb-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+          <p className={`text-xs mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
             Your answer has been sent to the host.
           </p>
+
+          {/* Points Earned Banner */}
+          {isAnswerCorrect ? (
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 mb-4 shadow-sm">
+              <div className="flex items-center justify-center gap-2 font-black text-base">
+                <Sparkles className="w-5 h-5 text-emerald-500" />
+                <span>+{pointsGained.toLocaleString()} Points Earned!</span>
+              </div>
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-300/80 mt-0.5">
+                Riddle solved with speed bonus!
+              </p>
+            </div>
+          ) : (
+            <div className={`p-3 rounded-xl border text-xs mb-4 ${
+              isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
+            }`}>
+              <span>Solution locked · Standings update at round end</span>
+            </div>
+          )}
 
           <div className={`p-4 rounded-2xl border text-left space-y-2 mb-4 ${
             isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
@@ -189,7 +268,7 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
                 ✓
               </div>
               <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 font-mono">
-                {lockedAnswer}
+                {solutionText}
               </span>
             </div>
           </div>
