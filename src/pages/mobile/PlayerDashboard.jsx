@@ -222,13 +222,9 @@ export default function PlayerDashboard({ onOpenTeam }) {
                 <span className="font-extrabold text-base md:text-lg tracking-tight">
                   Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
                 </span>
-                <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full border ${status.bg}`}>
-                  {status.text}
-                </span>
+                
               </div>
-              <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Samarambh
-              </p>
+             
             </div>
           </div>
 
@@ -346,12 +342,9 @@ export default function PlayerDashboard({ onOpenTeam }) {
 
             {/* Quick Summary Pill on Mobile */}
             <div className="flex items-center gap-2 self-start sm:self-auto">
-              <div className={`text-xs px-3 py-1.5 rounded-xl border flex items-center gap-2 ${
-                isDarkMode ? 'bg-slate-800/70 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
-              }`}>
+             
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Connected & Synced</span>
-              </div>
+              
             </div>
           </div>
 
@@ -403,7 +396,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                 : 'bg-slate-50 border-slate-200/80 hover:border-indigo-300'
             }`}>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Squad</span>
+                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Squad Rank</span>
                 <Shield className="w-4 h-4 text-indigo-500" />
               </div>
               {player?.teamCode ? (
