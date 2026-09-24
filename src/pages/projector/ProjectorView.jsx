@@ -649,7 +649,7 @@ export default function ProjectorView() {
                   animate={{ scale: 1, opacity: 1 }} 
                   className="w-full"
                 >
-                  <SkribblProjectorView payload={qData} activeQuestion={gameState.activeQuestion} />
+<SkribblProjectorView payload={qData.payload} activeQuestion={gameState.activeQuestion} />
                 </motion.div>
               ) : qType === 'photo_recognize' ? (
                 <motion.div 
