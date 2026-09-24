@@ -6,7 +6,7 @@ import {
   persistentMultipleTabManager 
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import firebaseAppletConfig from "../../firebase-applet-config.json";
+
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseAppletConfig?.apiKey,
@@ -20,8 +20,7 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Connect with persistent multi-tab local cache for seamless offline resilience
-const databaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseAppletConfig?.firestoreDatabaseId;
-
+const databaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
 let firestoreInstance;
 try {
   firestoreInstance = initializeFirestore(app, {
