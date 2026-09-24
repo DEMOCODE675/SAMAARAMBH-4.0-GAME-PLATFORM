@@ -1,7 +1,7 @@
-import React, { useContext, useState, useEffect, useMemo } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { GameContext } from '../../context/GameContext'; 
-import { CheckCircle2, Clock, Sun, Moon, Sparkles, Zap } from 'lucide-react';
+import { Lock, Sun, Moon } from 'lucide-react';
 
 // Import our Views
 import PlayerLogin from './PlayerLogin';
@@ -12,7 +12,7 @@ import TerminalUI from './components/TerminalUI';
 import PhotoQuizUI from './components/PhotoQuizUI';
 import PuzzleUI from './components/PuzzleUI';
 
-function LockedFallbackView({ gameState, player, activeQuestion }) {
+function LockedFallbackView() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('techarena_theme') === 'dark';
   });
@@ -24,22 +24,6 @@ function LockedFallbackView({ gameState, player, activeQuestion }) {
       return next;
     });
   };
-
-  const timeRemaining = gameState?.timeRemaining || 0;
-  const qId = activeQuestion?.id || gameState?.activeQuestion?.id;
-
-  const savedAnswer = useMemo(() => {
-    if (!player?.pin || !qId) return null;
-    try {
-      const raw = localStorage.getItem(`answer_${player.pin}_${qId}`);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  }, [player?.pin, qId]);
-
-  const isCorrect = savedAnswer?.isCorrect;
-  const pointsAwarded = savedAnswer?.pointsAwarded || (isCorrect ? 1000 : 0);
 
   return (
     <div className={`min-h-screen flex flex-col justify-between p-6 transition-colors duration-200 ${
@@ -74,85 +58,52 @@ function LockedFallbackView({ gameState, player, activeQuestion }) {
         </button>
       </div>
 
-      {/* Center Card */}
-      <div className="max-w-md w-full mx-auto text-center py-6">
-        <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto mb-4 shadow-sm ${
-          isCorrect 
-            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' 
-            : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
-        }`}>
-          <CheckCircle2 className="w-8 h-8" />
+      {/* Center Lock Card */}
+      <div className="max-w-md w-full mx-auto text-center py-8">
+        {/* Animated Circular Ring - Hover and Running effect */}
+        <div className="relative w-28 h-28 mx-auto mb-6 flex items-center justify-center">
+          {/* Subtle glowing ambient aura */}
+          <div className="absolute -inset-3 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 blur-lg" />
+
+          {/* Outer active running spinner ring */}
+          <div 
+            className="absolute inset-0 rounded-full border-2 border-indigo-500/20 border-t-indigo-600 dark:border-t-indigo-400 border-r-indigo-500 animate-spin" 
+            style={{ animationDuration: '2s' }} 
+          />
+          {/* Reverse secondary subtle ring */}
+          <div 
+            className="absolute inset-2 rounded-full border border-dashed border-indigo-400/30 dark:border-indigo-300/25 animate-spin" 
+            style={{ animationDuration: '5s', animationDirection: 'reverse' }} 
+          />
+          {/* Concentric radar pulse ring */}
+          <div 
+            className="absolute -inset-2 rounded-full border border-indigo-500/20 animate-ping opacity-25" 
+            style={{ animationDuration: '2.6s' }} 
+          />
+          {/* Centered lock badge */}
+          <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 dark:bg-indigo-950/70 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-lg shadow-indigo-500/15">
+            <Lock className="w-7 h-7 stroke-[2.2]" />
+          </div>
         </div>
 
-        <h2 className="text-2xl font-bold tracking-tight mb-1">
-          Answer Locked!
+        <h2 className="text-2xl font-bold tracking-tight mb-2">
+          Response Locked
         </h2>
-        <p className={`text-xs mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-          Your response has been secured. Awaiting round closure from the host...
+        <p className={`text-xs mb-6 max-w-xs mx-auto leading-relaxed ${
+          isDarkMode ? 'text-slate-400' : 'text-slate-500'
+        }`}>
+          Your response has been secured. Please wait for the host to conclude the round.
         </p>
 
-        {/* Points Banner */}
-        {isCorrect ? (
-          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 mb-4 shadow-sm">
-            <div className="flex items-center justify-center gap-2 font-black text-base">
-              <Sparkles className="w-5 h-5 text-emerald-500" />
-              <span>+{pointsAwarded.toLocaleString()} Points Earned!</span>
-            </div>
-            <p className="text-[11px] text-emerald-700 dark:text-emerald-300/80 mt-0.5">
-              Correct answer with speed multiplier!
-            </p>
-          </div>
-        ) : savedAnswer ? (
-          <div className={`p-3 rounded-xl border text-xs mb-4 ${
-            isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
-          }`}>
-            <span>Choice secured · Results will verify upon round close</span>
-          </div>
-        ) : null}
-
-        {/* Locked choice info */}
-        {savedAnswer?.answer && (
-          <div className={`p-4 rounded-2xl border text-left space-y-2 mb-4 ${
-            isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
-          }`}>
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-              Your Locked Choice
-            </span>
-            <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                ✓
-              </div>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 break-words">
-                {savedAnswer.answer}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Player Total Score Bar */}
-        <div className={`p-3 rounded-xl border flex items-center justify-between text-xs mb-4 ${
-          isDarkMode ? 'bg-slate-900/70 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
-        }`}>
-          <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
-            <Zap className="w-3.5 h-3.5 text-emerald-500" /> Your Total Score:
-          </span>
-          <span className="font-extrabold text-sm text-emerald-600 dark:text-emerald-400">
-            {player?.score || 0} pts
-          </span>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20">
+          <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+          <span>Live · Round in Progress</span>
         </div>
-
-        {timeRemaining > 0 && (
-          <div className={`p-3 rounded-xl border text-xs max-w-xs mx-auto flex items-center justify-center gap-2 ${
-            isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-600 shadow-sm'
-          }`}>
-            <Clock className="w-3.5 h-3.5 text-amber-500" />
-            <span>Time remaining in round: <strong className="font-mono">{timeRemaining}s</strong></span>
-          </div>
-        )}
       </div>
 
+      {/* Footer Branding */}
       <div className="text-center text-[11px] text-slate-400 pb-2">
-        Samarambh 4.0 · Live Stage
+        <span className="font-semibold text-slate-300">MLSA miet</span> © 2026 All Rights Reserved
       </div>
     </div>
   );
@@ -205,7 +156,7 @@ export default function MobileController() {
     const renderActiveView = () => {
       // If student already locked an answer for THIS question, show waiting state
       if (hasSubmitted) {
-        return <LockedFallbackView gameState={gameState} player={player} activeQuestion={block} />;
+        return <LockedFallbackView />;
       }
       
       switch (block.type) {

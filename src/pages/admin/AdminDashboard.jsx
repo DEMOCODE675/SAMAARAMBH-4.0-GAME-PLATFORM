@@ -2,22 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../../config/firebase';
 import { collection, addDoc, serverTimestamp, getDocs, doc, setDoc, updateDoc, onSnapshot, increment, query, where } from 'firebase/firestore';
 import { 
-  ShieldAlert, 
-  Terminal, 
   Layers, 
   Tv, 
   Radio, 
   CheckCircle2, 
   AlertCircle, 
-  Clock, 
-  Send, 
   RefreshCw, 
   StopCircle, 
   FilePlus, 
   Sliders, 
-  Sparkles,
-  HelpCircle,
-  Image as ImageIcon
+  Sparkles
 } from 'lucide-react';
 
 export default function AdminDashboard() {

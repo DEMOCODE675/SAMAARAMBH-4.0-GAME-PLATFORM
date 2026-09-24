@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { AuthContext } from '../../context/AuthContext';
 import { GameContext } from '../../context/GameContext'; 
 import { db } from '../../config/firebase';
@@ -17,36 +17,10 @@ import {
   LogOut, 
   Target, 
   ChevronRight,
-  Eye,
-  EyeOff,
   Sun,
   Moon
 } from 'lucide-react';
-
-// Generates 1-2 character initials for clean avatar representation
-const getInitials = (name = '') => {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 0 || !parts[0]) return '?';
-  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-};
-
-// Deterministic pleasing gradient for avatar backgrounds
-const getAvatarGradient = (name = '') => {
-  const gradients = [
-    'from-indigo-500 to-violet-600',
-    'from-blue-500 to-cyan-600',
-    'from-emerald-500 to-teal-600',
-    'from-amber-500 to-orange-600',
-    'from-rose-500 to-pink-600',
-    'from-purple-500 to-fuchsia-600',
-  ];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return gradients[Math.abs(hash) % gradients.length];
-};
+import GlassAvatar from '../../components/GlassAvatar';
 
 export default function PlayerDashboard({ onOpenTeam }) {
   const { player, logout } = useContext(AuthContext);
@@ -61,8 +35,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
   const [activeTab, setActiveTab] = useState('solo'); 
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Privacy controls: PIN is strictly private and hidden by default
-  const [showMyPin, setShowMyPin] = useState(false);
+  // Active state & search controls
   const [copiedPin, setCopiedPin] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -231,31 +204,23 @@ export default function PlayerDashboard({ onOpenTeam }) {
           {/* Top-Right Controls */}
           <div className="flex items-center gap-2 md:gap-2.5">
             
-            {/* Private Login PIN chip: Protected with Eye toggle */}
+            {/* Login PIN Chip: Always visible */}
             <div 
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-mono transition-colors ${
                 isDarkMode 
                   ? 'bg-slate-900 border-slate-800 text-slate-200' 
                   : 'bg-slate-100 border-slate-200 text-slate-700'
               }`}
-              title="Your personal login PIN. Hidden from other players."
+              title="Your personal login PIN"
             >
               <span className={`text-[10px] uppercase font-sans font-semibold hidden sm:inline ${
                 isDarkMode ? 'text-slate-400' : 'text-slate-500'
               }`}>
                 My PIN:
               </span>
-              <span className="font-bold tracking-widest text-indigo-600 dark:text-indigo-400">
-                {showMyPin ? player?.pin : '••••'}
+              <span className="font-bold tracking-widest text-indigo-600 dark:text-indigo-400 font-mono">
+                {player?.pin || '----'}
               </span>
-              
-              <button 
-                onClick={() => setShowMyPin(!showMyPin)} 
-                className="p-1 hover:text-indigo-600 dark:hover:text-indigo-400 text-slate-400 transition-colors"
-                title={showMyPin ? "Hide PIN" : "Reveal PIN"}
-              >
-                {showMyPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              </button>
 
               <button 
                 onClick={handleCopyPin}
@@ -321,9 +286,11 @@ export default function PlayerDashboard({ onOpenTeam }) {
             
             {/* Player Avatar & Identity */}
             <div className="flex items-center gap-3.5">
-              <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-tr ${getAvatarGradient(player?.name || 'Player')} flex items-center justify-center text-white font-bold text-lg md:text-xl shadow-md shrink-0`}>
-                {getInitials(player?.name || 'Player')}
-              </div>
+              <GlassAvatar 
+                name={player?.name || 'Player'} 
+                seed={player?.pin || ''} 
+                size="lg" 
+              />
               
               <div>
                 <div className="flex items-center gap-2">
@@ -548,9 +515,11 @@ export default function PlayerDashboard({ onOpenTeam }) {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${getAvatarGradient(p.name)} flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0`}>
-                            {getInitials(p.name)}
-                          </div>
+                          <GlassAvatar 
+                            name={p.name} 
+                            seed={p.pin || p.id} 
+                            size="md" 
+                          />
                           <div className="min-w-0">
                             <h4 className="text-sm font-bold truncate flex items-center gap-1.5">
                               {p.name}
@@ -560,9 +529,14 @@ export default function PlayerDashboard({ onOpenTeam }) {
                                 </span>
                               )}
                             </h4>
-                            <p className={`text-xs truncate ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                              {p.teamCode ? `Squad: ${p.teamCode}` : 'Solo'}
-                            </p>
+                            {(() => {
+                              const sName = p.teamName || allTeams.find(t => t.teamCode === p.teamCode || t.id === p.teamCode)?.teamName;
+                              return (
+                                <p className={`text-xs truncate ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                  {p.teamCode ? (sName ? `Squad: ${sName}` : 'Squad Member') : 'Solo'}
+                                </p>
+                              );
+                            })()}
                           </div>
                         </div>
 
@@ -635,9 +609,11 @@ export default function PlayerDashboard({ onOpenTeam }) {
                               #{actualRank}
                             </span>
 
-                            <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${getAvatarGradient(p.name)} flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0`}>
-                              {getInitials(p.name)}
-                            </div>
+                            <GlassAvatar 
+                              name={p.name} 
+                              seed={p.pin || p.id} 
+                              size="sm" 
+                            />
                             
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 truncate">
@@ -650,11 +626,16 @@ export default function PlayerDashboard({ onOpenTeam }) {
                                   </span>
                                 )}
                               </div>
-                              <span className={`text-[11px] truncate block ${
-                                isDarkMode ? 'text-slate-400' : 'text-slate-500'
-                              }`}>
-                                {p.teamCode ? `Squad: ${p.teamCode}` : 'Solo Player'}
-                              </span>
+                              {(() => {
+                                const sName = p.teamName || allTeams.find(t => t.teamCode === p.teamCode || t.id === p.teamCode)?.teamName;
+                                return (
+                                  <span className={`text-[11px] truncate block ${
+                                    isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                                  }`}>
+                                    {p.teamCode ? (sName ? `Squad: ${sName}` : 'Squad Member') : 'Solo Player'}
+                                  </span>
+                                );
+                              })()}
                             </div>
                           </div>
 
@@ -750,18 +731,25 @@ export default function PlayerDashboard({ onOpenTeam }) {
                           </span>
                         </div>
 
-                        <div>
-                          <h4 className="text-sm font-bold truncate flex items-center gap-1.5">
-                            {t.teamName}
-                            {isMyTeam && (
-                              <span className="text-[10px] bg-emerald-600 text-white font-semibold px-1.5 py-0.2 rounded">
-                                Your Squad
-                              </span>
-                            )}
-                          </h4>
-                          <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                            Team Code: {t.teamCode || t.id}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <GlassAvatar 
+                            name={t.teamName} 
+                            seed={t.teamCode || t.id} 
+                            size="md" 
+                          />
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-bold truncate flex items-center gap-1.5">
+                              {t.teamName}
+                              {isMyTeam && (
+                                <span className="text-[10px] bg-emerald-600 text-white font-semibold px-1.5 py-0.2 rounded">
+                                  Your Squad
+                                </span>
+                              )}
+                            </h4>
+                            <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                              {isMyTeam ? 'Your Active Squad' : 'Registered Squad'}
+                            </p>
+                          </div>
                         </div>
 
                         <div className={`mt-3 pt-2.5 border-t flex items-center justify-between ${
@@ -832,6 +820,12 @@ export default function PlayerDashboard({ onOpenTeam }) {
                               #{actualRank}
                             </span>
                             
+                            <GlassAvatar 
+                              name={t.teamName} 
+                              seed={t.teamCode || t.id} 
+                              size="sm" 
+                            />
+
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 truncate">
                                 <span className="font-semibold truncate">
@@ -846,7 +840,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                               <span className={`text-[11px] truncate block ${
                                 isDarkMode ? 'text-slate-400' : 'text-slate-500'
                               }`}>
-                                Code: {t.teamCode || t.id}
+                                {isMyTeam ? 'Your Active Squad' : 'Registered Squad'}
                               </span>
                             </div>
                           </div>

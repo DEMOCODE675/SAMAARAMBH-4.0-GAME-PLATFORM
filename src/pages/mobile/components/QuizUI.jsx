@@ -6,12 +6,10 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from '
 import { saveToOfflineQueue, flushOfflineQueue } from '../../../utils/offlineSync';
 import { 
   Check, 
-  CheckCircle2, 
   Clock, 
   Lock, 
   Sun, 
   Moon, 
-  Sparkles, 
   Zap, 
   AlertCircle 
 } from 'lucide-react';
@@ -254,10 +252,6 @@ export default function QuizUI({ payload, setHasSubmitted: setParentSubmitted })
 
   // 2. PHASE 2: SUBMITTED / LOCKED STATE
   if (lockedAnswer) {
-    const selectedText = typeof lockedAnswer === 'object' ? lockedAnswer.selected : lockedAnswer;
-    const isAnswerCorrect = typeof lockedAnswer === 'object' ? lockedAnswer.isCorrect : false;
-    const pointsGained = typeof lockedAnswer === 'object' ? (lockedAnswer.pointsAwarded || 0) : 0;
-
     return (
       <div className={`min-h-screen flex flex-col justify-between p-6 transition-colors duration-200 ${
         isDarkMode ? 'bg-[#0b0f19] text-white' : 'bg-slate-50 text-slate-900'
@@ -278,78 +272,65 @@ export default function QuizUI({ payload, setHasSubmitted: setParentSubmitted })
             </span>
           </div>
 
-          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
-            questionTimer > 5 
-              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800' 
-              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800'
-          }`}>
-            <Clock className="w-3.5 h-3.5" />
-            <span>{questionTimer}s remaining</span>
-          </div>
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded-xl border transition-colors ${
+              isDarkMode 
+                ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
+            }`}
+            title="Toggle theme"
+          >
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
         </div>
 
-        {/* Lock Confirmation Card */}
-        <div className="max-w-md w-full mx-auto text-center py-6">
-          <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto mb-4 shadow-sm ${
-            isAnswerCorrect 
-              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' 
-              : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
-          }`}>
-            <CheckCircle2 className="w-8 h-8" />
+        {/* Center Lock Card */}
+        <div className="max-w-md w-full mx-auto text-center py-8">
+          {/* Animated Circular Ring - Hover and Running effect */}
+          <div className="relative w-28 h-28 mx-auto mb-6 flex items-center justify-center">
+            {/* Subtle glowing ambient aura */}
+            <div className="absolute -inset-3 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 blur-lg" />
+
+            {/* Outer active running spinner ring */}
+            <div 
+              className="absolute inset-0 rounded-full border-2 border-indigo-500/20 border-t-indigo-600 dark:border-t-indigo-400 border-r-indigo-500 animate-spin" 
+              style={{ animationDuration: '2s' }} 
+            />
+            {/* Reverse secondary subtle ring */}
+            <div 
+              className="absolute inset-2 rounded-full border border-dashed border-indigo-400/30 dark:border-indigo-300/25 animate-spin" 
+              style={{ animationDuration: '5s', animationDirection: 'reverse' }} 
+            />
+            {/* Concentric radar pulse ring */}
+            <div 
+              className="absolute -inset-2 rounded-full border border-indigo-500/20 animate-ping opacity-25" 
+              style={{ animationDuration: '2.6s' }} 
+            />
+            {/* Centered lock badge */}
+            <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 dark:bg-indigo-950/70 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-lg shadow-indigo-500/15">
+              <Lock className="w-7 h-7 stroke-[2.2]" />
+            </div>
           </div>
 
-          <h1 className="text-2xl font-bold tracking-tight mb-1">
-            Answer Locked!
-          </h1>
-          <p className={`text-xs mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            Your response has been secured and sent to the host.
+          <h2 className="text-2xl font-bold tracking-tight mb-2">
+            Response Locked
+          </h2>
+          <p className={`text-xs mb-6 max-w-xs mx-auto leading-relaxed ${
+            isDarkMode ? 'text-slate-400' : 'text-slate-500'
+          }`}>
+            Your response has been secured. Please wait for the host to conclude the round.
           </p>
 
-          {/* Points Earned Banner */}
-          {isAnswerCorrect ? (
-            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 mb-4 shadow-sm">
-              <div className="flex items-center justify-center gap-2 font-black text-base">
-                <Sparkles className="w-5 h-5 text-emerald-500" />
-                <span>+{pointsGained.toLocaleString()} Points Earned!</span>
-              </div>
-              <p className="text-[11px] text-emerald-700 dark:text-emerald-300/80 mt-0.5">
-                Correct answer locked with speed bonus!
-              </p>
-            </div>
-          ) : (
-            <div className={`p-3 rounded-xl border text-xs mb-4 ${
-              isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
-            }`}>
-              <span>Answer locked · Results reveal when round concludes</span>
-            </div>
-          )}
-
-          <div className={`p-4 rounded-2xl border text-left space-y-2 mb-4 ${
-            isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
-          }`}>
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-              Your Locked Choice
-            </span>
-            <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                ✓
-              </div>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                {selectedText}
-              </span>
-            </div>
-          </div>
-
-          <div className={`p-3 rounded-xl border text-xs text-center flex items-center justify-center gap-2 ${
-            isDarkMode ? 'bg-slate-900/40 border-slate-800 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-600'
-          }`}>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            <span>Synced to Host · Awaiting Round Resolution</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20">
+            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+            <span>Live · Round in Progress</span>
           </div>
         </div>
 
+        {/* Footer Branding */}
         <div className="text-center text-[11px] text-slate-400 pb-2">
-          Samarambh 4.0 · Live Stage
+          <span className="font-semibold text-slate-300">MLSA miet</span> © 2026 All Rights Reserved
         </div>
       </div>
     );

@@ -9,13 +9,13 @@ import {
   LogIn, 
   ArrowLeft, 
   Crown, 
-  User, 
   Copy, 
   Check, 
   Sun, 
   Moon,
   Clock
 } from 'lucide-react';
+import GlassAvatar from '../../components/GlassAvatar';
 
 export default function TeamLobby({ onBack }) {
   const { player } = useContext(AuthContext);
@@ -99,7 +99,11 @@ export default function TeamLobby({ onBack }) {
       });
 
       const playerRef = doc(db, 'players', player.pin);
-      await updateDoc(playerRef, { teamCode: code, isLeader: true });
+      await updateDoc(playerRef, { 
+        teamCode: code, 
+        teamName: teamName.trim(),
+        isLeader: true 
+      });
 
       window.location.reload(); 
     } catch (err) {
@@ -122,9 +126,14 @@ export default function TeamLobby({ onBack }) {
       const docSnap = await getDoc(teamRef);
 
       if (!docSnap.exists()) throw new Error("Team code not found.");
+      const teamData = docSnap.data();
 
       const playerRef = doc(db, 'players', player.pin);
-      await updateDoc(playerRef, { teamCode: code, isLeader: false });
+      await updateDoc(playerRef, { 
+        teamCode: code, 
+        teamName: teamData.teamName || '',
+        isLeader: false 
+      });
 
       window.location.reload();
     } catch (err) {
@@ -176,10 +185,17 @@ export default function TeamLobby({ onBack }) {
               isDarkMode ? 'bg-slate-900/80 border-slate-800 backdrop-blur-md' : 'bg-white border-slate-200 shadow-slate-200/50'
             }`}
           >
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2 border border-emerald-500/20">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3 border border-emerald-500/20">
               <Users className="w-3.5 h-3.5" />
               <span>Squad Active</span>
             </div>
+
+            <GlassAvatar 
+              name={activeTeam.teamName} 
+              seed={activeTeam.teamCode} 
+              size="xl" 
+              className="mx-auto mb-3 shadow-xl" 
+            />
 
             <h1 className="text-2xl font-black tracking-tight mb-4">
               {activeTeam.teamName}
@@ -227,11 +243,10 @@ export default function TeamLobby({ onBack }) {
                   const isMe = member.pin === player.pin;
                   return (
                     <div key={member.pin} className="px-3.5 py-2.5 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        {member.isLeader ? (
+                      <div className="flex items-center gap-2.5">
+                        <GlassAvatar name={member.name} seed={member.pin} size="xs" />
+                        {member.isLeader && (
                           <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                        ) : (
-                          <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         )}
                         <span className={`font-semibold ${isMe ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ''}`}>
                           {member.name} {isMe && '(You)'}

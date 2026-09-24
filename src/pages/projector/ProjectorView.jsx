@@ -21,6 +21,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import StageCountdown from '../../components/StageCountdown';
+import GlassAvatar from '../../components/GlassAvatar';
 
 // Option badge designs with high-contrast big-screen presence
 const MCQ_BADGES = [
@@ -84,6 +85,7 @@ export default function ProjectorView() {
   
   // Leaderboard data
   const [leaders, setLeaders] = useState([]);
+  const [teamsMap, setTeamsMap] = useState({});
   
   // Real-time players joined count
   const [playerCount, setPlayerCount] = useState(0);
@@ -216,6 +218,26 @@ export default function ProjectorView() {
     return () => clearInterval(interval);
   }, [gameState?.updatedAt, gameState?.status, gameState?.activeQuestion]);
 
+  // Real-time map of teamCode -> teamName for all registered squads
+  useEffect(() => {
+    const unsubTeams = onSnapshot(collection(db, 'events', 'samarambh', 'teams'), (snapshot) => {
+      const map = {};
+      snapshot.forEach((docSnap) => {
+        const d = docSnap.data();
+        const tName = d.teamName || d.name;
+        if (tName) {
+          if (d.teamCode) map[d.teamCode] = tName;
+          map[docSnap.id] = tName;
+        }
+      });
+      setTeamsMap(map);
+    }, (error) => {
+      console.warn("Teams map listener error:", error.message);
+    });
+
+    return () => unsubTeams();
+  }, []);
+
   // 4. Leaderboard Data Listener
   useEffect(() => {
     if (gameState?.status !== 'leaderboard') return;
@@ -230,7 +252,8 @@ export default function ProjectorView() {
           id: doc.id,
           name: isTeamMode ? data.teamName : data.name,
           score: isTeamMode ? (data.totalScore || 0) : (data.score || 0),
-          teamCode: data.teamCode || null
+          teamCode: data.teamCode || null,
+          teamName: data.teamName || null
         });
       });
       results.sort((a, b) => b.score - a.score);
@@ -510,21 +533,28 @@ export default function ProjectorView() {
                   }} 
                   className={`flex justify-between items-center px-6 md:px-8 py-4 md:py-5 rounded-2xl border-2 backdrop-blur-xl transition-all duration-300 ${cardStyle}`}
                 >
-                  <div className="flex items-center gap-5 md:gap-8">
+                  <div className="flex items-center gap-4 md:gap-6">
                     {/* Rank Badge */}
                     <div className={`px-4 py-2 rounded-xl border text-sm md:text-base font-mono flex items-center gap-1.5 shrink-0 ${badgeColor}`}>
                       {medalIcon && <span>{medalIcon}</span>}
                       <span>{rankText}</span>
                     </div>
 
+                    {/* Translucent Glass Avatar with unique colorway */}
+                    <GlassAvatar 
+                      name={leader.name} 
+                      seed={leader.id || leader.teamCode || leader.name} 
+                      size="lg" 
+                    />
+
                     {/* Participant / Squad Name */}
                     <div className="flex flex-col">
                       <span className="text-2xl md:text-3xl font-extrabold tracking-wide text-white">
                         {leader.name}
                       </span>
-                      {leader.teamCode && !isTeamMode && (
-                        <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">
-                          Squad: {leader.teamCode}
+                      {!isTeamMode && (leader.teamCode || leader.teamName) && (
+                        <span className="text-xs md:text-sm font-semibold text-indigo-300 tracking-wider">
+                          Squad: {leader.teamName || (leader.teamCode ? teamsMap[leader.teamCode] : null) || 'Squad Member'}
                         </span>
                       )}
                     </div>

@@ -6,10 +6,8 @@ import {
   Tv, 
   Sliders, 
   ArrowUpRight, 
-  Zap, 
   Sun, 
-  Moon, 
-  Radio
+  Moon
 } from 'lucide-react';
 
 export default function HomePortal() {
