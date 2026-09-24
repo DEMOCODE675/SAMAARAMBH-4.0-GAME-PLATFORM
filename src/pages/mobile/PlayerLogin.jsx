@@ -30,7 +30,7 @@ export default function PlayerLogin() {
 
     try {
       if (isReturningUser) {
-        if (!inputValue.trim()) throw new Error("Enter your 4-digit PIN");
+        if (!inputValue.trim()) throw new Error("Enter your 4-digit Login Code");
         await signInWithPin(inputValue.trim());
       } else {
         if (inputValue.trim().length < 2) throw new Error("Name is too short");
@@ -62,7 +62,7 @@ export default function PlayerLogin() {
             <span className="font-extrabold text-sm tracking-tight">
               Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
             </span>
-            <p className="text-[10px] text-slate-400 font-mono tracking-wider">SAMARAMBH 4.0</p>
+
           </div>
         </div>
 
@@ -117,7 +117,7 @@ export default function PlayerLogin() {
               }`}
             >
               <KeyRound className="w-3.5 h-3.5" />
-              <span>PIN Code</span>
+              <span>Login Code</span>
             </button>
           </div>
 
@@ -135,7 +135,7 @@ export default function PlayerLogin() {
                   <label className={`block text-[11px] font-bold uppercase tracking-wider ${
                     isDarkMode ? 'text-slate-400' : 'text-slate-500'
                   }`}>
-                    {isReturningUser ? 'Enter 4-Digit PIN' : 'Your Contestant Name'}
+                    {isReturningUser ? 'Enter Login Code' : 'Your Name'}
                   </label>
                   
                   <div className="relative">
@@ -145,7 +145,7 @@ export default function PlayerLogin() {
                       maxLength={isReturningUser ? 4 : 24}
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      placeholder={isReturningUser ? "• • • •" : "e.g. Alex"}
+                      placeholder={isReturningUser ? "• • • •" : "e.g. Nancy"}
                       autoFocus
                       className={`w-full rounded-2xl px-4 py-3.5 text-base font-semibold outline-none border transition-all ${
                         isReturningUser 
@@ -179,7 +179,7 @@ export default function PlayerLogin() {
               disabled={isSubmitting || !inputValue.trim()} 
               className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition-all shadow-md shadow-indigo-600/25 active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
             >
-              <span>{isSubmitting ? 'Connecting...' : (isReturningUser ? 'Restore Session' : 'Enter Arena')}</span>
+              <span>{isSubmitting ? 'Connecting...' : (isReturningUser ? 'Login' : 'Register')}</span>
               {!isSubmitting && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
@@ -188,7 +188,7 @@ export default function PlayerLogin() {
 
       {/* Footer Branding */}
       <div className="text-center text-[11px] text-slate-400 font-medium">
-        TechArena · Live Interactive Engine
+        <span className="font-semibold text-slate-300">MLSA miet</span> © 2026 All Rights Reserved
       </div>
     </div>
   );
