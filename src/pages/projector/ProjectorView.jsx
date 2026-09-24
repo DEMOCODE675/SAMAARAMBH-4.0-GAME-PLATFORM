@@ -21,6 +21,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import StageCountdown from '../../components/StageCountdown';
+import SkribblProjectorView from './components/SkribblProjectorView';
 
 // Option badge designs with high-contrast big-screen presence
 const MCQ_BADGES = [
@@ -260,7 +261,7 @@ export default function ProjectorView() {
       </video>
 
       {/* Atmospheric Stage Vignettes & Gradient Shimmer */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#070b14] via-[#070b14]/85 to-[#070b14]/90" />
+      <div className="absolute inset-0 bg-linear-to-t from-[#070b14] via-[#070b14]/85 to-[#070b14]/90" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.12)_0%,transparent_70%)]" />
     </div>
   );
@@ -369,7 +370,7 @@ export default function ProjectorView() {
               <span>State-Level Annual Tech Symposium</span>
             </div>
 
-            <h1 className="text-6xl sm:text-7xl md:text-9xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-amber-200 drop-shadow-[0_0_60px_rgba(99,102,241,0.5)]">
+            <h1 className="text-6xl sm:text-7xl md:text-9xl font-black tracking-tight text-transparent bg-clip-text bg-linear-to-r from-white via-indigo-200 to-amber-200 drop-shadow-[0_0_60px_rgba(99,102,241,0.5)]">
               SAMARAMBH 4.0
             </h1>
             <p className="text-lg md:text-2xl text-slate-300 font-semibold tracking-widest uppercase mt-3">
@@ -455,7 +456,7 @@ export default function ProjectorView() {
             <span>Official Stage Standings</span>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-rose-300 to-indigo-300 drop-shadow-[0_0_40px_rgba(245,158,11,0.4)]">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-wider text-transparent bg-clip-text bg-linear-to-r from-amber-300 via-rose-300 to-indigo-300 drop-shadow-[0_0_40px_rgba(245,158,11,0.4)]">
             {isTeamMode ? 'SQUAD GRAND RANKINGS' : 'SOLO ARENA STANDINGS'}
           </h1>
         </motion.div>
@@ -626,7 +627,7 @@ export default function ProjectorView() {
         </header>
 
         {/* Central Display Area */}
-        <main className="flex-grow flex flex-col items-center justify-center z-10 my-auto w-full max-w-7xl mx-auto py-4">
+        <main className="grow flex flex-col items-center justify-center z-10 my-auto w-full max-w-7xl mx-auto py-4">
           {setupCountdown > 0 ? (
             /* CINEMA-GRADE INCOMING TRANSMISSION COUNTDOWN */
             <StageCountdown
@@ -642,8 +643,15 @@ export default function ProjectorView() {
           ) : (
             /* ACTIVE QUESTION CONTENT BASED ON CHALLENGE TYPE */
             <div className="w-full">
-              {/* 1. VISUAL INSPECTION / PHOTO RECOGNIZE */}
-              {qType === 'photo_recognize' ? (
+              {qType === 'skribbl_draw' ? (
+                <motion.div 
+                  initial={{ scale: 0.96, opacity: 0 }} 
+                  animate={{ scale: 1, opacity: 1 }} 
+                  className="w-full"
+                >
+                  <SkribblProjectorView payload={qData} activeQuestion={gameState.activeQuestion} />
+                </motion.div>
+              ) : qType === 'photo_recognize' ? (
                 <motion.div 
                   initial={{ scale: 0.96, opacity: 0 }} 
                   animate={{ scale: 1, opacity: 1 }} 
@@ -770,7 +778,7 @@ export default function ProjectorView() {
                           <span className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-2xl md:text-3xl font-black mr-6 shrink-0 shadow-lg ${b.badgeBg}`}>
                             {b.label}
                           </span>
-                          <span className={`text-2xl md:text-4xl font-extrabold leading-snug break-words ${b.text}`}>
+                          <span className={`text-2xl md:text-4xl font-extrabold leading-snug text-wrap ${b.text}`}>
                             {opt}
                           </span>
                         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../config/firebase';
-import { collection, addDoc, serverTimestamp, getDocs, doc, setDoc, updateDoc, onSnapshot, writeBatch, increment, query, where } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, getDoc, doc, setDoc, updateDoc, onSnapshot, writeBatch, increment, query, where } from 'firebase/firestore';
 import { 
   ShieldAlert, 
   Terminal, 
@@ -17,8 +17,11 @@ import {
   Sliders, 
   Sparkles,
   HelpCircle,
+  Pencil,
   Image as ImageIcon
 } from 'lucide-react';
+import SkribblWordPicker from './components/SkribblWordPicker';
+import SkribblDrawerCanvas from './components/SkribblDrawerCanvas';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('builder'); 
@@ -47,6 +50,8 @@ export default function AdminDashboard() {
 
   const [puzzlePrompt, setPuzzlePrompt] = useState('');
   const [puzzleCorrect, setPuzzleCorrect] = useState('');
+
+  const [skribblWord, setSkribblWord] = useState('');
 
   // Controller & Arsenal States
   const [savedBlocks, setSavedBlocks] = useState([]);
@@ -87,6 +92,32 @@ export default function AdminDashboard() {
     return () => unsubscribe();
   }, []);
 
+  // Auto-validate Skribbl guesses in real-time
+  useEffect(() => {
+    if (liveState?.status === 'playing' && liveState?.activeQuestion?.type === 'skribbl_draw') {
+      const sessionId = liveState.activeQuestion.payload.sessionId;
+      let unsub = () => {};
+
+      getDoc(doc(db, 'events', 'samarambh', 'skribblSessions', sessionId)).then(snap => {
+        const secretWord = snap.data()?.currentWord;
+        if (!secretWord) return;
+        
+        unsub = onSnapshot(collection(db, 'events', 'samarambh', 'skribblSessions', sessionId, 'guesses'), (querySnapshot) => {
+          querySnapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+              const data = change.doc.data();
+              if (data.guess === secretWord && !data.isCorrect) {
+                updateDoc(change.doc.ref, { isCorrect: true }).catch(console.error);
+              }
+            }
+          });
+        });
+      });
+
+      return () => { unsub(); };
+    }
+  }, [liveState?.status, liveState?.activeQuestion?.id]);
+
   const handleSaveQuestion = async (e) => {
     e.preventDefault();
     setStatusMsg('Saving challenge block...');
@@ -119,6 +150,29 @@ export default function AdminDashboard() {
         puzzleText: puzzlePrompt,
         correctAnswer: puzzleCorrect.trim()
       };
+    } else if (uiType === 'skribbl_draw') {
+      if (!skribblWord) {
+        setStatusMsg('❌ Please select a word for Skribbl.');
+        return;
+      }
+      const sessionId = 'skribbl_' + Date.now().toString(36);
+      payload = {
+        sessionId: sessionId,
+        wordLength: skribblWord.length,
+        wordHint: skribblWord.replace(/[a-zA-Z0-9]/g, '_ ').trim()
+      };
+      try {
+        await setDoc(doc(db, 'events', 'samarambh', 'skribblSessions', sessionId), {
+          status: 'waiting',
+          currentWord: skribblWord.toLowerCase(),
+          wordLength: skribblWord.length,
+          wordHint: skribblWord.replace(/[a-zA-Z0-9]/g, '_ ').trim(),
+          roundNumber: 1,
+          createdAt: serverTimestamp()
+        });
+      } catch (err) {
+        console.error("Failed to pre-create Skribbl session", err);
+      }
     }
 
     try {
@@ -136,7 +190,7 @@ export default function AdminDashboard() {
       setMcqQuestion(''); setMcqOptions(''); setMcqCorrect('');
       setTermLog(''); setTermMission(''); setTermCorrect('');
       setPhotoUrls(''); setPhotoPrompt(''); setPhotoOptions(''); setPhotoCorrect(''); setPhotoExplanation('');
-      setPuzzlePrompt(''); setPuzzleCorrect('');
+      setPuzzlePrompt(''); setPuzzleCorrect(''); setSkribblWord('');
       fetchBlocks();
       setTimeout(() => setStatusMsg(''), 3000);
     } catch (err) {
@@ -152,6 +206,13 @@ export default function AdminDashboard() {
       await updateDoc(doc(db, 'content', 'samarambh', 'questions', block.id), {
         isUsed: true
       });
+
+      if (block.type === 'skribbl_draw') {
+        await updateDoc(doc(db, 'events', 'samarambh', 'skribblSessions', block.payload.sessionId), {
+          status: 'drawing',
+          roundStartedAt: serverTimestamp()
+        });
+      }
 
       // 2. Push to Active Event Controller
       await setDoc(doc(db, 'events', 'samarambh'), {
@@ -186,41 +247,66 @@ export default function AdminDashboard() {
 
       const activeQ = liveState.activeQuestion;
       const qId = activeQ.id;
-      const correctVal = activeQ.payload.correctAnswer || activeQ.payload.correctCommand;
-
-      // 1. Query submitted answers for this active challenge
-      const answersSnap = await getDocs(
-        query(
-          collection(db, 'events', 'samarambh', 'answers'),
-          where('questionId', '==', qId)
-        )
-      );
-
+      
       const scoredPlayers = new Set();
       const updates = [];
 
-      answersSnap.forEach((ansDoc) => {
-        const data = ansDoc.data();
-        const pPin = data.playerPin;
-        const answerText = (data.answer || '').toString().trim().toLowerCase();
-        const targetCorrect = (correctVal || '').toString().trim().toLowerCase();
+      if (activeQ.type === 'skribbl_draw') {
+        const sessionId = activeQ.payload.sessionId;
+        const sessionSnap = await getDoc(doc(db, 'events', 'samarambh', 'skribblSessions', sessionId));
+        const secretWord = sessionSnap.data()?.currentWord || '';
 
-        if (pPin && !scoredPlayers.has(pPin)) {
-          scoredPlayers.add(pPin);
-          if (answerText === targetCorrect) {
-            // Speed calculation: Faster answers receive higher point bonuses
-            const elapsed = data.elapsedSeconds !== undefined ? Number(data.elapsedSeconds) : (activeQ.timeLimit || 20);
-            const totalLimit = activeQ.timeLimit || 20;
-            const speedBonus = Math.max(0, Math.round(((totalLimit - elapsed) / totalLimit) * 500));
-            const totalPointsAwarded = 1000 + speedBonus;
+        const guessesSnap = await getDocs(
+          collection(db, 'events', 'samarambh', 'skribblSessions', sessionId, 'guesses')
+        );
 
-            updates.push({
-              pin: pPin,
-              points: totalPointsAwarded
-            });
+        guessesSnap.forEach((ansDoc) => {
+          const data = ansDoc.data();
+          const pPin = data.playerPin;
+          if (pPin && !scoredPlayers.has(pPin)) {
+            if (data.guess === secretWord) {
+              scoredPlayers.add(pPin);
+              updates.push({
+                pin: pPin,
+                points: 1500 // Base score for correct drawing guess
+              });
+            }
           }
-        }
-      });
+        });
+      } else {
+        const correctVal = activeQ.payload.correctAnswer || activeQ.payload.correctCommand;
+
+        // 1. Query submitted answers for this active challenge
+        const answersSnap = await getDocs(
+          query(
+            collection(db, 'events', 'samarambh', 'answers'),
+            where('questionId', '==', qId)
+          )
+        );
+
+        answersSnap.forEach((ansDoc) => {
+          const data = ansDoc.data();
+          const pPin = data.playerPin;
+          const answerText = (data.answer || '').toString().trim().toLowerCase();
+          const targetCorrect = (correctVal || '').toString().trim().toLowerCase();
+
+          if (pPin && !scoredPlayers.has(pPin)) {
+            scoredPlayers.add(pPin);
+            if (answerText === targetCorrect) {
+              // Speed calculation: Faster answers receive higher point bonuses
+              const elapsed = data.elapsedSeconds !== undefined ? Number(data.elapsedSeconds) : (activeQ.timeLimit || 20);
+              const totalLimit = activeQ.timeLimit || 20;
+              const speedBonus = Math.max(0, Math.round(((totalLimit - elapsed) / totalLimit) * 500));
+              const totalPointsAwarded = 1000 + speedBonus;
+
+              updates.push({
+                pin: pPin,
+                points: totalPointsAwarded
+              });
+            }
+          }
+        });
+      }
 
       // 2. Commit batch updates in chunks to avoid Firestore 500-write limit
       const CHUNK_SIZE = 400;
@@ -277,7 +363,7 @@ export default function AdminDashboard() {
         {/* Top Control Bar Header */}
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800/80 pb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-rose-950/50">
+            <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-rose-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-rose-950/50">
               <Sliders className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -373,6 +459,7 @@ export default function AdminDashboard() {
                   <option value="terminal_hack">Terminal Hack</option>
                   <option value="photo_recognize">Threat / Photo Recognition</option>
                   <option value="logic_puzzle">Logic Puzzle</option>
+                  <option value="skribbl_draw">Skribbl Draw</option>
                 </select>
               </div>
 
@@ -549,6 +636,17 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               )}
+
+              {uiType === 'skribbl_draw' && (
+                <div className="space-y-4">
+                  <SkribblWordPicker onSelectWord={setSkribblWord} />
+                  {skribblWord && (
+                    <div className="mt-4 p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-400 font-bold flex items-center justify-between">
+                      <span>Selected Word: <span className="text-white uppercase tracking-wider">{skribblWord}</span></span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="pt-2">
@@ -570,21 +668,43 @@ export default function AdminDashboard() {
             
             {/* Live Playing Banner & Panic Action */}
             {liveState?.status === 'playing' && (
-              <div className="bg-rose-950/50 border border-rose-500/50 p-6 rounded-3xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 shadow-xl shadow-rose-950/40">
-                <div>
-                  <h2 className="text-rose-400 font-extrabold tracking-widest uppercase text-sm mb-1 flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping" />
-                    Game is currently LIVE
-                  </h2>
-                  <p className="text-slate-200 text-xs">Students are submitting answers right now.</p>
+              <div className="space-y-6">
+                <div className="bg-rose-950/50 border border-rose-500/50 p-6 rounded-3xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 shadow-xl shadow-rose-950/40">
+                  <div>
+                    <h2 className="text-rose-400 font-extrabold tracking-widest uppercase text-sm mb-1 flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping" />
+                      Game is currently LIVE
+                    </h2>
+                    <p className="text-slate-200 text-xs">Students are submitting answers right now.</p>
+                  </div>
+                  <button 
+                    onClick={handleStopGame}
+                    className="bg-rose-600 hover:bg-rose-500 text-white font-black px-6 py-3.5 rounded-2xl uppercase tracking-widest text-xs shadow-lg shadow-rose-900/60 flex items-center justify-center gap-2 transition-all active:scale-95"
+                  >
+                    <StopCircle className="w-4 h-4" />
+                    <span>🛑 Stop & Calculate</span>
+                  </button>
                 </div>
-                <button 
-                  onClick={handleStopGame}
-                  className="bg-rose-600 hover:bg-rose-500 text-white font-black px-6 py-3.5 rounded-2xl uppercase tracking-widest text-xs shadow-lg shadow-rose-900/60 flex items-center justify-center gap-2 transition-all active:scale-95"
-                >
-                  <StopCircle className="w-4 h-4" />
-                  <span>🛑 Stop & Calculate</span>
-                </button>
+
+                {liveState?.activeQuestion?.type === 'skribbl_draw' && (
+                  <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl">
+                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Pencil className="w-5 h-5 text-rose-500" />
+                      Live Drawing Canvas
+                    </h3>
+                    <SkribblDrawerCanvas 
+                      sessionId={liveState.activeQuestion.payload.sessionId} 
+                      onClear={async () => {
+                         const sessionId = liveState.activeQuestion.payload.sessionId;
+                         const strokesRef = collection(db, 'events', 'samarambh', 'skribblSessions', sessionId, 'strokes');
+                         const snap = await getDocs(strokesRef);
+                         const batch = writeBatch(db);
+                         snap.forEach(d => batch.delete(d.ref));
+                         await batch.commit();
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             )}
 

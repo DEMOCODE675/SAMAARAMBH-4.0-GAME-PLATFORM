@@ -11,6 +11,7 @@ import QuizUI from './components/QuizUI';
 import TerminalUI from './components/TerminalUI'; 
 import PhotoQuizUI from './components/PhotoQuizUI';
 import PuzzleUI from './components/PuzzleUI';
+import SkribblPlayerUI from './components/SkribblPlayerUI';
 
 function LockedFallbackView({ gameState }) {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -176,6 +177,16 @@ export default function MobileController() {
               player={player} 
               gameState={gameState} 
               questionTimer={questionTimer} 
+              setHasSubmitted={setHasSubmitted} 
+            />
+          );
+        case 'skribbl_draw':
+          return (
+            <SkribblPlayerUI 
+              payload={block.payload} 
+              player={player} 
+              gameState={gameState} 
+              questionTimer={questionTimer}
               setHasSubmitted={setHasSubmitted} 
             />
           );
