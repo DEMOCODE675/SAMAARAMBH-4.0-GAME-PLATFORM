@@ -8,6 +8,44 @@ export default function PlayerRoundReview({ player }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!player?.pin) {
+      setLoading(false);
+      return;
+    }
+
+    // 1. Instant check from local cache to avoid Firestore read storm across 400 clients
+    try {
+      const prefix = `answer_${player.pin}_`;
+      let latestLocal = null;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(prefix)) {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            latestLocal = parsed;
+          }
+        }
+      }
+
+      if (latestLocal) {
+        setLastAnswer({
+          questionText: latestLocal.questionText || 'Latest Arena Challenge',
+          submittedAnswer: latestLocal.answer,
+          answer: latestLocal.answer,
+          isCorrect: latestLocal.isCorrect,
+          pointsAwarded: latestLocal.pointsAwarded,
+          questionType: latestLocal.questionType || 'mcq',
+          explanation: latestLocal.explanation || ''
+        });
+        setLoading(false);
+        return;
+      }
+    } catch (localErr) {
+      console.warn("Local review read fallback to network:", localErr);
+    }
+
+    // 2. Network fallback
     const fetchLatestSubmission = async () => {
       try {
         setLoading(true);
@@ -37,7 +75,7 @@ export default function PlayerRoundReview({ player }) {
     };
 
     fetchLatestSubmission();
-  }, [player.pin]);
+  }, [player?.pin]);
 
   if (loading) {
     return (

@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../config/firebase';
-import { collection, addDoc, serverTimestamp, getDocs, doc, setDoc, updateDoc, onSnapshot, increment, query, where } from 'firebase/firestore';
+import { 
+  collection, 
+  addDoc, 
+  serverTimestamp, 
+  getDocs, 
+  doc, 
+  setDoc, 
+  updateDoc, 
+  onSnapshot, 
+  increment, 
+  query, 
+  where,
+  writeBatch 
+} from 'firebase/firestore';
 import { 
   Layers, 
   Tv, 
@@ -17,6 +30,7 @@ import {
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('builder'); 
   const [statusMsg, setStatusMsg] = useState('');
+  const [isCalculating, setIsCalculating] = useState(false);
 
   // Builder Form States
   const [targetRound, setTargetRound] = useState('Round 1');
@@ -171,10 +185,13 @@ export default function AdminDashboard() {
   };
 
   const handleStopGame = async () => {
+    if (isCalculating) return;
+    setIsCalculating(true);
     setStatusMsg('Calculating scores & pushing leaderboard...');
     try {
       if (!liveState || !liveState.activeQuestion) {
         setStatusMsg('❌ No active challenge to score.');
+        setIsCalculating(false);
         return;
       }
 
@@ -191,7 +208,8 @@ export default function AdminDashboard() {
       );
 
       const scoredPlayers = new Set();
-      const updates = [];
+      const playerUpdates = [];
+      const teamTotals = {};
 
       answersSnap.forEach((ansDoc) => {
         const data = ansDoc.data();
@@ -203,47 +221,67 @@ export default function AdminDashboard() {
         if (pPin && !scoredPlayers.has(pPin)) {
           scoredPlayers.add(pPin);
           
-          if (data.pointsAwarded && data.pointsAwarded > 0) {
-            updates.push({
-              pin: pPin,
-              teamCode,
-              points: data.pointsAwarded,
-              alreadyAwarded: true
-            });
-          } else if (data.isCorrect || (targetCorrect && answerText === targetCorrect)) {
-            const elapsed = data.timeTaken !== undefined ? Number(data.timeTaken) : (data.elapsedSeconds !== undefined ? Number(data.elapsedSeconds) : (activeQ.timeLimit || 20));
-            const totalLimit = activeQ.timeLimit || 20;
-            const speedBonus = Math.max(0, Math.round(((totalLimit - Math.min(totalLimit, elapsed)) / totalLimit) * 500));
-            const totalPointsAwarded = 1000 + speedBonus;
+          let points = 0;
+          let isCorrect = Boolean(data.isCorrect);
 
-            updates.push({
-              pin: pPin,
-              teamCode,
-              points: totalPointsAwarded,
-              alreadyAwarded: false
-            });
+          if (!isCorrect && targetCorrect && answerText === targetCorrect) {
+            isCorrect = true;
+          }
+
+          if (isCorrect) {
+            if (data.pointsAwarded && data.pointsAwarded > 0) {
+              points = data.pointsAwarded;
+            } else {
+              const elapsed = data.timeTaken !== undefined ? Number(data.timeTaken) : (data.elapsedSeconds !== undefined ? Number(data.elapsedSeconds) : (activeQ.timeLimit || 20));
+              const totalLimit = activeQ.timeLimit || 20;
+              const speedBonus = Math.max(0, Math.round(((totalLimit - Math.min(totalLimit, elapsed)) / totalLimit) * 500));
+              points = 1000 + speedBonus;
+            }
+          }
+
+          if (points > 0) {
+            // Only update score if client did not already directly award it
+            if (!data.clientAwarded) {
+              playerUpdates.push({ pin: pPin, points });
+              if (teamCode) {
+                teamTotals[teamCode] = (teamTotals[teamCode] || 0) + points;
+              }
+            }
           }
         }
       });
 
-      // 2. Commit updates to players and teams in Firestore
-      for (const u of updates) {
-        if (!u.alreadyAwarded) {
-          try {
-            const playerRef = doc(db, 'players', u.pin);
-            await updateDoc(playerRef, {
-              score: increment(u.points)
-            });
-            if (u.teamCode) {
-              const teamRef = doc(db, 'events', 'samarambh', 'teams', u.teamCode);
-              await updateDoc(teamRef, {
-                totalScore: increment(u.points)
-              });
-            }
-          } catch (e) {
-            console.warn("Player score update error in stop game:", e);
-          }
+      // 2. Commit updates in atomic batches (staying safely under Firestore's 500 ops limit)
+      const MAX_BATCH_SIZE = 400;
+      let currentBatch = writeBatch(db);
+      let count = 0;
+
+      for (const p of playerUpdates) {
+        const playerRef = doc(db, 'players', p.pin);
+        currentBatch.update(playerRef, { score: increment(p.points) });
+        count++;
+
+        if (count >= MAX_BATCH_SIZE) {
+          await currentBatch.commit();
+          currentBatch = writeBatch(db);
+          count = 0;
         }
+      }
+
+      for (const [tCode, totalPts] of Object.entries(teamTotals)) {
+        const teamRef = doc(db, 'events', 'samarambh', 'teams', tCode);
+        currentBatch.update(teamRef, { totalScore: increment(totalPts) });
+        count++;
+
+        if (count >= MAX_BATCH_SIZE) {
+          await currentBatch.commit();
+          currentBatch = writeBatch(db);
+          count = 0;
+        }
+      }
+
+      if (count > 0) {
+        await currentBatch.commit();
       }
 
       // 3. Switch Stage Display to Leaderboard
@@ -254,11 +292,13 @@ export default function AdminDashboard() {
         updatedAt: serverTimestamp()
       });
 
-      setStatusMsg(`🏆 Scores calculated for ${updates.length} correct entries! Showing Leaderboard.`);
+      setStatusMsg(`🏆 Scores calculated for ${scoredPlayers.size} entries! Showing Leaderboard.`);
       setTimeout(() => setStatusMsg(''), 4000);
     } catch (err) {
-      console.error(err);
+      console.error("Score calculation error:", err);
       setStatusMsg('❌ Failed to calculate scores.');
+    } finally {
+      setIsCalculating(false);
     }
   };
 
@@ -273,7 +313,7 @@ export default function AdminDashboard() {
       });
       setStatusMsg('✅ Projector updated successfully!');
       setTimeout(() => setStatusMsg(''), 2000);
-    } catch (err) {
+    } catch {
       setStatusMsg('❌ Failed to update projector.');
     }
   };
@@ -590,10 +630,20 @@ export default function AdminDashboard() {
                 </div>
                 <button 
                   onClick={handleStopGame}
-                  className="bg-rose-600 hover:bg-rose-500 text-white font-black px-6 py-3.5 rounded-2xl uppercase tracking-widest text-xs shadow-lg shadow-rose-900/60 flex items-center justify-center gap-2 transition-all active:scale-95"
+                  disabled={isCalculating}
+                  className="bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black px-6 py-3.5 rounded-2xl uppercase tracking-widest text-xs shadow-lg shadow-rose-900/60 flex items-center justify-center gap-2 transition-all active:scale-95"
                 >
-                  <StopCircle className="w-4 h-4" />
-                  <span>🛑 Stop & Calculate</span>
+                  {isCalculating ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Calculating Scores...</span>
+                    </>
+                  ) : (
+                    <>
+                      <StopCircle className="w-4 h-4" />
+                      <span>🛑 Stop & Calculate</span>
+                    </>
+                  )}
                 </button>
               </div>
             )}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../config/firebase';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
-import { saveToOfflineQueue, flushOfflineQueue } from '../../../utils/offlineSync';
+import { doc, updateDoc, increment } from 'firebase/firestore';
+import { submitAnswerRecord } from '../../../utils/offlineSync';
 import { 
   Clock, 
   Lock,
@@ -46,8 +46,8 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
     const updatedAtMs = gameState.updatedAt.toMillis ? gameState.updatedAt.toMillis() : Date.now();
 
     const updateTimers = () => {
-      const elapsedSeconds = Math.floor((Date.now() - updatedAtMs) / 1000);
-      const remainingSetup = 5 - elapsedSeconds;
+      const elapsedSeconds = Math.max(0, Math.floor((Date.now() - updatedAtMs) / 1000));
+      const remainingSetup = Math.min(5, Math.max(0, 5 - elapsedSeconds));
       
       if (remainingSetup > 0) {
         setSetupCountdown(remainingSetup);
@@ -55,8 +55,8 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
       } else {
         setSetupCountdown(0);
         const activeElapsed = elapsedSeconds - 5;
-        const remainingQuestionTime = totalTimeLimit - activeElapsed;
-        setQuestionTimer(remainingQuestionTime <= 0 ? 0 : remainingQuestionTime);
+        const remainingQuestionTime = Math.max(0, totalTimeLimit - activeElapsed);
+        setQuestionTimer(remainingQuestionTime);
       }
     };
 
@@ -66,8 +66,8 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
   }, [gameState?.updatedAt, totalTimeLimit]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!answerInput.trim() || questionTimer <= 0 || isSubmitting) return;
+    if (e && e.preventDefault) e.preventDefault();
+    if (!answerInput.trim() || isSubmitting || lockedAnswer) return;
     setIsSubmitting(true);
 
     const targetCorrect = payload.correctAnswer || payload.correct || payload.answer || '';
@@ -79,6 +79,32 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
     const timeTaken = Math.max(0, totalLimit - questionTimer);
     const speedBonus = isCorrect ? Math.max(0, Math.round(((totalLimit - Math.min(totalLimit, timeTaken)) / totalLimit) * 500)) : 0;
     const pointsAwarded = isCorrect ? (1000 + speedBonus) : 0;
+
+    let clientAwarded = false;
+
+    // Immediately award points in Firestore with safety fallback
+    if (pointsAwarded > 0 && player?.pin) {
+      try {
+        const playerRef = doc(db, 'players', player.pin);
+        await updateDoc(playerRef, {
+          score: increment(pointsAwarded)
+        });
+        clientAwarded = true;
+      } catch (scoreErr) {
+        console.warn("Direct player score increment deferred to admin batch:", scoreErr.message);
+      }
+
+      if (player.teamCode) {
+        try {
+          const teamRef = doc(db, 'events', 'samarambh', 'teams', player.teamCode);
+          await updateDoc(teamRef, {
+            totalScore: increment(pointsAwarded)
+          });
+        } catch (teamScoreErr) {
+          console.warn("Direct team score increment deferred:", teamScoreErr.message);
+        }
+      }
+    }
 
     const answerRecord = {
       pin: player.pin,
@@ -94,9 +120,9 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
       answer: submittedVal,
       isCorrect: isCorrect,
       pointsAwarded: pointsAwarded,
+      clientAwarded: clientAwarded,
       timeTaken: Number(timeTaken.toFixed(1)),
-      elapsedSeconds: Number(timeTaken.toFixed(1)),
-      timestamp: serverTimestamp()
+      elapsedSeconds: Number(timeTaken.toFixed(1))
     };
 
     try {
@@ -111,29 +137,6 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
       console.warn("Local storage write error:", err);
     }
 
-    // Immediately award points in Firestore to player doc and squad
-    if (pointsAwarded > 0 && player?.pin) {
-      try {
-        const playerRef = doc(db, 'players', player.pin);
-        await updateDoc(playerRef, {
-          score: increment(pointsAwarded)
-        });
-      } catch (scoreErr) {
-        console.warn("Direct player score increment error:", scoreErr);
-      }
-
-      if (player.teamCode) {
-        try {
-          const teamRef = doc(db, 'events', 'samarambh', 'teams', player.teamCode);
-          await updateDoc(teamRef, {
-            totalScore: increment(pointsAwarded)
-          });
-        } catch (teamScoreErr) {
-          console.warn("Direct team score increment error:", teamScoreErr);
-        }
-      }
-    }
-
     if (navigator.vibrate) navigator.vibrate(50);
     const lockedInfo = {
       submittedVal,
@@ -145,28 +148,18 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
     if (setParentSubmitted) setParentSubmitted(true);
 
     try {
-      await addDoc(collection(db, 'events', 'samarambh', 'answers'), answerRecord);
-    } catch (error) {
-      console.warn("Puzzle submission deferred, saving to offline buffer:", error.message);
-      saveToOfflineQueue(answerRecord);
+      await submitAnswerRecord(answerRecord);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Auto-submit puzzle input when timer hits 0
   useEffect(() => {
-    const handleOnline = () => {
-      flushOfflineQueue(async (item) => {
-        await addDoc(collection(db, 'events', 'samarambh', 'answers'), {
-          ...item,
-          timestamp: serverTimestamp()
-        });
-      });
-    };
-
-    window.addEventListener('online', handleOnline);
-    return () => window.removeEventListener('online', handleOnline);
-  }, []);
+    if (setupCountdown === 0 && questionTimer === 0 && answerInput.trim() && !lockedAnswer && !isSubmitting) {
+      handleSubmit();
+    }
+  }, [setupCountdown, questionTimer, answerInput, lockedAnswer, isSubmitting]);
 
   // 1. COUNTDOWN STATE
   if (setupCountdown > 0) {

@@ -104,8 +104,6 @@ export default function TeamLobby({ onBack }) {
         teamName: teamName.trim(),
         isLeader: true 
       });
-
-      window.location.reload(); 
     } catch (err) {
       setError(err.message);
     } finally {
@@ -134,8 +132,6 @@ export default function TeamLobby({ onBack }) {
         teamName: teamData.teamName || '',
         isLeader: false 
       });
-
-      window.location.reload();
     } catch (err) {
       setError(err.message);
     } finally {

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { AuthContext } from '../../context/AuthContext';
 import { GameContext } from '../../context/GameContext'; 
 import { db } from '../../config/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import PlayerRoundReview from './components/PlayerRoundReview';
 import { 
   Trophy, 
@@ -55,22 +55,27 @@ export default function PlayerDashboard({ onOpenTeam }) {
     });
   };
 
-  // 1. Real-time listener for players
+  // 1. Real-time listener for top players (optimized to prevent quota avalanche)
   useEffect(() => {
-    const unsubscribePlayers = onSnapshot(collection(db, 'players'), (snapshot) => {
+    const q = query(collection(db, 'players'), orderBy('score', 'desc'), limit(50));
+    const unsubscribePlayers = onSnapshot(q, (snapshot) => {
       const playersList = [];
       snapshot.forEach((docSnap) => {
         playersList.push({ id: docSnap.id, ...docSnap.data() });
       });
 
-      playersList.sort((a, b) => (b.score || 0) - (a.score || 0));
       setAllPlayers(playersList);
 
       const index = playersList.findIndex((p) => p.pin === player?.pin);
       if (index !== -1) {
         setMyRank({
           rank: index + 1,
-          score: playersList[index].score || 0
+          score: playersList[index].score || player?.score || 0
+        });
+      } else {
+        setMyRank({
+          rank: '50+',
+          score: player?.score || 0
         });
       }
     }, (error) => {
@@ -78,17 +83,17 @@ export default function PlayerDashboard({ onOpenTeam }) {
     });
 
     return () => unsubscribePlayers();
-  }, [player?.pin]);
+  }, [player?.pin, player?.score]);
 
-  // 2. Real-time listener for teams
+  // 2. Real-time listener for top teams (optimized)
   useEffect(() => {
-    const unsubscribeTeams = onSnapshot(collection(db, 'events', 'samarambh', 'teams'), (snapshot) => {
+    const qTeams = query(collection(db, 'events', 'samarambh', 'teams'), orderBy('totalScore', 'desc'), limit(50));
+    const unsubscribeTeams = onSnapshot(qTeams, (snapshot) => {
       const teamsList = [];
       snapshot.forEach((docSnap) => {
         teamsList.push({ id: docSnap.id, ...docSnap.data() });
       });
 
-      teamsList.sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
       setAllTeams(teamsList);
 
       if (player?.teamCode) {
@@ -309,9 +314,10 @@ export default function PlayerDashboard({ onOpenTeam }) {
 
             {/* Quick Summary Pill on Mobile */}
             <div className="flex items-center gap-2 self-start sm:self-auto">
-             
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              
+              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${status.bg}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                <span>{status.text}</span>
+              </span>
             </div>
           </div>
 
