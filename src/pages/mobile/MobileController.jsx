@@ -11,6 +11,7 @@ import QuizUI from './components/QuizUI';
 import TerminalUI from './components/TerminalUI'; 
 import PhotoQuizUI from './components/PhotoQuizUI';
 import PuzzleUI from './components/PuzzleUI';
+import SkribblUI from './components/SkribblUI';
 
 function LockedFallbackView() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -152,10 +153,13 @@ export default function MobileController() {
   if (gameState?.status === 'playing' && gameState?.activeQuestion) {
     const block = gameState.activeQuestion;
     const questionTimer = gameState.timeRemaining || 20;
+    // Skribbl guessers stay on the live canvas even after a correct guess,
+    // so the one-shot submission lock must not apply to this game type.
+    const isSkribblRound = block.type === 'skribbl';
 
     const renderActiveView = () => {
       // If student already locked an answer for THIS question, show waiting state
-      if (hasSubmitted) {
+      if (hasSubmitted && !isSkribblRound) {
         return <LockedFallbackView />;
       }
       
@@ -196,6 +200,13 @@ export default function MobileController() {
               gameState={gameState} 
               questionTimer={questionTimer} 
               setHasSubmitted={setHasSubmitted} 
+            />
+          );
+        case 'skribbl':
+          return (
+            <SkribblUI 
+              player={player} 
+              gameState={gameState} 
             />
           );
         default:

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import StageCountdown from '../../components/StageCountdown';
 import GlassAvatar from '../../components/GlassAvatar';
+import SkribblStage from './components/SkribblStage';
 
 // Option badge designs with high-contrast big-screen presence
 const MCQ_BADGES = [
@@ -590,6 +591,24 @@ export default function ProjectorView() {
     const qData = gameState?.activeQuestion || {};
     const payload = qData.payload || {};
     const qType = qData.type || 'mcq';
+
+    // SKRIBBL DRAW & GUESS: takes over the full stage with its own chrome
+    // (canvas, hint, live guess feed) while keeping logo/video/operator bar.
+    if (qType === 'skribbl') {
+      return (
+        <div className="min-h-screen bg-[#070b14] text-white flex flex-col p-6 md:p-10 relative overflow-hidden select-none font-sans">
+          <TopLeftLogoBadge />
+          {renderBackgroundVideo()}
+          {renderOperatorBar()}
+          <SkribblStage
+            activeQ={qData}
+            gameState={gameState}
+            playerCount={playerCount}
+            embedded
+          />
+        </div>
+      );
+    }
     const isTeamMode = gameState?.gameMode === 'team';
 
     // Extract challenge contents across formats

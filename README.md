@@ -12,6 +12,7 @@ TechArena operates on a 3-tier real-time sync model powered by Firebase:
 1. **Admin CMS & Live Controller:** Allows hosts to build challenge blocks by round, flag used questions to prevent duplication, push questions live globally, and trigger stage overrides.
 2. **Cinematic Projector View:** Features a dual-phase suspense gatekeeper countdown, active question windows, and cyber-themed podium leaderboards.
 3. **Mobile Player Controller:** A responsive mobile interface with haptic feedback, real-time standings, device-sync PIN persistence, and squad roster management.
+4. **Skribbl Draw & Guess Mode:** A live party-game mode where the admin draws a secret word on stage while up to 200 players race to guess it from their phones, with salted-hash word verification (the word is never broadcast mid-round), progressive masked hints, and append-only stroke streaming.
 
 ---
 
@@ -30,6 +31,8 @@ If you want to introduce a brand new interactive game mode to TechArena, follow 
 2. **Mobile Router (`src/pages/mobile/MobileController.jsx`):** Add a matching `case` in the switch statement to intercept the new block type when pushed live.
 3. **Mobile View (`src/pages/mobile/components/PhishingUI.jsx`):** Build the student-facing interactive interface that submits the user's choice and timestamp back to the Firestore `answers` collection.
 
+> **Multi-round live games** that need their own control surface (like **Skribbl**) go one step further: add a dedicated admin tab component under `src/pages/admin/components/` (see `SkribblControl.jsx`) and a projector stage component under `src/pages/projector/components/` (see `SkribblStage.jsx`).
+
 ---
 
 ## 📂 Project Architecture
@@ -45,14 +48,19 @@ techarena/
 │   │
 │   ├── context/
 │   │   ├── AuthContext.jsx     # Global authentication, anonymous Firebase login, and PIN session persistence
-│   │   └── GameContext.js      # Global real-time listener for event state (playing, waiting, activeQuestion)
+│   │   └── GameContext.jsx     # Global real-time listener for event state (playing, waiting, activeQuestion)
 │   │
 │   ├── pages/
 │   │   ├── admin/
-│   │   │   └── AdminDashboard.jsx # Admin CMS & Live Controller (Round sorting, challenge builder, question used flagging, latency score calc)
+│   │   │   ├── AdminDashboard.jsx # Admin CMS & Live Controller (Round sorting, challenge builder, question used flagging, latency score calc)
+│   │   │   └── components/
+│   │   │       ├── SkribblControl.jsx   # Skribbl Draw & Guess control center (round flow, word armory, live guess feed)
+│   │   │       └── SkribblDrawCanvas.jsx # Operator drawing surface with batched append-only stroke uploads
 │   │   │
 │   │   ├── projector/
-│   │   │   └── ProjectorView.jsx  # Stage display view with 5s countdown gate, active question screen, & podium leaderboards
+│   │   │   ├── ProjectorView.jsx  # Stage display view with 5s countdown gate, active question screen, & podium leaderboards
+│   │   │   └── components/
+│   │   │       └── SkribblStage.jsx # Big-screen Skribbl stage (live canvas, masked hint, guess feed, reveal podium)
 │   │   │
 │   │   └── mobile/
 │   │       ├── MobileController.jsx # Master router for mobile players (handles game interceptors, team views, and solo mode switching)
@@ -64,11 +72,18 @@ techarena/
 │   │           ├── QuizUI.jsx        # Standard MCQ answering grid for students with haptic feedback
 │   │           ├── TerminalUI.jsx    # Terminal console shell challenge view for coding missions
 │   │           ├── PhotoQuizUI.jsx   # Visual image identification challenge interface
-│   │           └── PuzzleUI.jsx      # Logic puzzle and riddle text submission interface
+│   │           ├── PuzzleUI.jsx      # Logic puzzle and riddle text submission interface
+│   │           └── SkribblUI.jsx     # Skribbl guesser view (live canvas, masked hint, guess input, reveal standings)
 │   │
 │   ├── App.jsx                 # Main application component / route switchboard
 │   ├── main.jsx                # React entry point wrapping app with Auth & Game contexts
-│   └── index.css               # Global Tailwind CSS styles and custom animations
+│   ├── index.css               # Global Tailwind CSS styles and custom animations
+│   ├── hooks/
+│   │   └── useSkribblStrokes.js # Firestore stroke feed hook (incremental replay, no composite indexes)
+│   ├── data/
+│   │   └── skribblWords.js     # Tech-themed Skribbl word bank with category pools
+│   └── utils/
+│       └── skribblEngine.js    # Salted-hash word verification, hint masking, scoring, stroke codec
 │
 ├── .env                        # Local environment variables (Firebase API keys - excluded from git)
 ├── .gitignore                  # Git ignore rules (node_modules, dist, .env)

@@ -14,6 +14,17 @@ service cloud.firestore {
       match /answers/{answerId} {
         allow read, write: if true;
       }
+
+      // Skribbl Draw & Guess: append-only stroke transport (admin writes,
+      // all clients read for live canvas replay)
+      match /skribblStrokes/{strokeId} {
+        allow read, write: if true;
+      }
+
+      // Skribbl Draw & Guess: guess chat + scoring records
+      match /skribblGuesses/{guessId} {
+        allow read, write: if true;
+      }
     }
 
     // Players Collection

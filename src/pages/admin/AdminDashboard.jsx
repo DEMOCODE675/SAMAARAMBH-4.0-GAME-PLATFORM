@@ -11,11 +11,13 @@ import {
   StopCircle, 
   FilePlus, 
   Sliders, 
-  Sparkles
+  Sparkles,
+  Palette
 } from 'lucide-react';
+import SkribblControl from './components/SkribblControl';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('builder'); 
+  const [activeTab, setActiveTab] = useState('builder'); // 'builder' | 'controller' | 'skribbl'
   const [statusMsg, setStatusMsg] = useState('');
 
   // Builder Form States
@@ -314,31 +316,48 @@ export default function AdminDashboard() {
         </header>
         
         {/* Modern Segmented Navigation Tabs */}
-        <div className="flex gap-2 p-1.5 bg-slate-900/80 border border-slate-800 rounded-2xl max-w-md">
+        <div className="flex gap-2 p-1.5 bg-slate-900/80 border border-slate-800 rounded-2xl max-w-xl">
           <button 
             onClick={() => setActiveTab('builder')} 
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'builder' 
                 ? 'bg-rose-600 text-white shadow-md shadow-rose-950/60' 
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
             }`}
           >
             <FilePlus className="w-4 h-4" />
-            <span>Game Builder (CMS)</span>
+            <span>Builder</span>
           </button>
 
           <button 
             onClick={() => setActiveTab('controller')} 
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'controller' 
                 ? 'bg-rose-600 text-white shadow-md shadow-rose-950/60' 
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
             }`}
           >
             <Radio className="w-4 h-4" />
-            <span>Live Event Controller</span>
+            <span>Controller</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('skribbl')} 
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'skribbl' 
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/60' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Palette className="w-4 h-4" />
+            <span>Skribbl</span>
           </button>
         </div>
+
+        {/* ========================================================================= */}
+        {/* TAB 0: SKRIBBL DRAW & GUESS */}
+        {/* ========================================================================= */}
+        {activeTab === 'skribbl' && <SkribblControl />}
 
         {/* ========================================================================= */}
         {/* TAB 1: GAME BUILDER (CMS) */}

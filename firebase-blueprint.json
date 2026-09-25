@@ -24,6 +24,36 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "pin", "score"]
+    },
+    "skribblStrokes": {
+      "title": "Skribbl Strokes",
+      "description": "Append-only drawing stroke batches for the live Skribbl canvas (per roundId, ordered by seq)",
+      "type": "object",
+      "properties": {
+        "kind": { "type": "string", "enum": ["ops", "undo", "clear"] },
+        "roundId": { "type": "string" },
+        "seq": { "type": "number" },
+        "strokeId": { "type": "string" },
+        "ops": { "type": "array" },
+        "createdAtMs": { "type": "number" }
+      },
+      "required": ["kind", "roundId", "seq"]
+    },
+    "skribblGuesses": {
+      "title": "Skribbl Guesses",
+      "description": "Player guesses for Skribbl rounds (correct guesses masked by isCorrect flag)",
+      "type": "object",
+      "properties": {
+        "roundId": { "type": "string" },
+        "pin": { "type": "string" },
+        "name": { "type": "string" },
+        "text": { "type": "string" },
+        "isCorrect": { "type": "boolean" },
+        "pointsAwarded": { "type": "number" },
+        "timeTaken": { "type": "number" },
+        "createdAtMs": { "type": "number" }
+      },
+      "required": ["roundId", "pin", "isCorrect"]
     }
   }
 }
