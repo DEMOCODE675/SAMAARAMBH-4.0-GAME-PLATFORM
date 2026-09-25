@@ -126,12 +126,20 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
     };
 
     try {
-      localStorage.setItem(`answer_${player.pin}_${qId}`, JSON.stringify({
+      const localRecord = {
+        questionId: qId,
+        questionType: 'logic_puzzle',
+        questionText: payload?.puzzlePrompt || payload?.riddle || 'Logic Puzzle',
+        submittedAnswer: submittedVal,
         answer: submittedVal,
         timeTaken: Number(timeTaken.toFixed(1)),
         isCorrect,
-        pointsAwarded
-      }));
+        pointsAwarded,
+        createdAt: Date.now(),
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`answer_${player.pin}_${qId}`, JSON.stringify(localRecord));
+      localStorage.setItem(`latest_answer_${player.pin}`, JSON.stringify(localRecord));
       localStorage.setItem(`submitted_${player.pin}_${qId}`, 'true');
     } catch (err) {
       console.warn("Local storage write error:", err);

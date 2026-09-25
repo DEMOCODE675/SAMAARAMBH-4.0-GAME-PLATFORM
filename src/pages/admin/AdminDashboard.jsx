@@ -24,8 +24,11 @@ import {
   StopCircle, 
   FilePlus, 
   Sliders, 
-  Sparkles
+  Sparkles,
+  Palette
 } from 'lucide-react';
+import SkribblControl from './components/SkribblControl';
+import { buildWordHint, hashWord } from '../../utils/skribblEngine';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('builder'); 
@@ -55,6 +58,10 @@ export default function AdminDashboard() {
 
   const [puzzlePrompt, setPuzzlePrompt] = useState('');
   const [puzzleCorrect, setPuzzleCorrect] = useState('');
+
+  // 🎨 Skribbl Draw & Guess Fields
+  const [skribblWord, setSkribblWord] = useState('');
+  const [skribblCategory, setSkribblCategory] = useState('');
 
   // Controller & Arsenal States
   const [savedBlocks, setSavedBlocks] = useState([]);
@@ -127,13 +134,24 @@ export default function AdminDashboard() {
         puzzleText: puzzlePrompt,
         correctAnswer: puzzleCorrect.trim()
       };
+    } else if (uiType === 'skribbl') {
+      const word = skribblWord.trim();
+      const hint = buildWordHint(word);
+      const wordHash = hashWord(word);
+      payload = {
+        word,
+        wordHash,
+        hint: { display: hint.display, reveals: hint.reveals },
+        category: skribblCategory.trim() || 'General Tech',
+        correctAnswer: word
+      };
     }
 
     try {
       await addDoc(collection(db, 'content', 'samarambh', 'questions'), {
         round: targetRound,
         type: uiType,
-        timeLimit: Number(timeLimit),
+        timeLimit: Number(timeLimit) || 75,
         payload: payload,
         isUsed: false,
         createdAt: serverTimestamp()
@@ -145,6 +163,7 @@ export default function AdminDashboard() {
       setTermLog(''); setTermMission(''); setTermCorrect('');
       setPhotoUrls(''); setPhotoPrompt(''); setPhotoOptions(''); setPhotoCorrect(''); setPhotoExplanation('');
       setPuzzlePrompt(''); setPuzzleCorrect('');
+      setSkribblWord(''); setSkribblCategory('');
       fetchBlocks();
       setTimeout(() => setStatusMsg(''), 3000);
     } catch (err) {
@@ -162,18 +181,54 @@ export default function AdminDashboard() {
       });
 
       // 2. Push to Active Event Controller
-      await setDoc(doc(db, 'events', 'samarambh'), {
-        status: 'playing',
-        gameMode: broadcastMode, 
-        activeQuestion: {
-          id: block.id,
-          type: block.type,
-          timeLimit: block.timeLimit,
-          payload: block.payload,
-          startTime: serverTimestamp()
-        },
-        updatedAt: serverTimestamp()
-      });
+      if (block.type === 'skribbl') {
+        const word = block.payload?.word || '';
+        const wordHash = block.payload?.wordHash || hashWord(word);
+        const hint = block.payload?.hint || buildWordHint(word);
+
+        sessionStorage.setItem('techarena_skribbl_word', JSON.stringify({ word, hash: wordHash }));
+
+        await setDoc(doc(db, 'events', 'samarambh'), {
+          status: 'playing',
+          gameMode: broadcastMode,
+          skribbl: {
+            roundIndex: 1,
+            totalRounds: 1,
+            phase: 'drawing',
+            wordLocked: true
+          },
+          activeQuestion: {
+            id: block.id,
+            type: 'skribbl',
+            roundId: block.id,
+            roundIndex: 1,
+            timeLimit: Number(block.timeLimit) || 75,
+            wordHash,
+            hint: { display: hint.display, reveals: hint.reveals },
+            hintLevel: 0,
+            startTime: serverTimestamp(),
+            word: null,
+            category: block.payload?.category || 'Tech',
+            payload: block.payload
+          },
+          updatedAt: serverTimestamp()
+        });
+
+        setActiveTab('skribbl');
+      } else {
+        await setDoc(doc(db, 'events', 'samarambh'), {
+          status: 'playing',
+          gameMode: broadcastMode, 
+          activeQuestion: {
+            id: block.id,
+            type: block.type,
+            timeLimit: block.timeLimit,
+            payload: block.payload,
+            startTime: serverTimestamp()
+          },
+          updatedAt: serverTimestamp()
+        });
+      }
 
       setStatusMsg('🚀 Question broadcast live!');
       fetchBlocks();
@@ -289,8 +344,16 @@ export default function AdminDashboard() {
         status: 'leaderboard',
         gameMode: broadcastMode,
         activeQuestion: null,
+        lastCompletedQuestion: {
+          id: qId,
+          type: activeQ.type,
+          questionText: activeQ.payload?.question || activeQ.payload?.commandPrompt || activeQ.payload?.puzzlePrompt || 'Challenge Concluded',
+          correctAnswer: correctVal
+        },
+        skribbl: null,
         updatedAt: serverTimestamp()
-      });
+      }, { merge: true });
+      sessionStorage.removeItem('techarena_skribbl_word');
 
       setStatusMsg(`🏆 Scores calculated for ${scoredPlayers.size} entries! Showing Leaderboard.`);
       setTimeout(() => setStatusMsg(''), 4000);
@@ -309,8 +372,9 @@ export default function AdminDashboard() {
         status: newStatus, 
         gameMode: overrideMode,
         activeQuestion: null, 
+        skribbl: null,
         updatedAt: serverTimestamp()
-      });
+      }, { merge: true });
       setStatusMsg('✅ Projector updated successfully!');
       setTimeout(() => setStatusMsg(''), 2000);
     } catch {
@@ -378,7 +442,24 @@ export default function AdminDashboard() {
             <Radio className="w-4 h-4" />
             <span>Live Event Controller</span>
           </button>
+
+          <button 
+            onClick={() => setActiveTab('skribbl')} 
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'skribbl' 
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/60' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Palette className="w-4 h-4" />
+            <span>Skribbl</span>
+          </button>
         </div>
+
+        {/* ========================================================================= */}
+        {/* TAB 0: SKRIBBL DRAW & GUESS */}
+        {/* ========================================================================= */}
+        {activeTab === 'skribbl' && <SkribblControl />}
 
         {/* ========================================================================= */}
         {/* TAB 1: GAME BUILDER (CMS) */}
@@ -416,13 +497,20 @@ export default function AdminDashboard() {
                 <label className="block text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Challenge Type</label>
                 <select 
                   value={uiType} 
-                  onChange={(e) => setUiType(e.target.value)} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setUiType(val);
+                    if (val === 'skribbl' && (timeLimit === 20 || timeLimit === '20')) {
+                      setTimeLimit(75);
+                    }
+                  }} 
                   className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 p-3 rounded-xl text-slate-200 text-sm outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-colors"
                 >
                   <option value="mcq">Standard MCQ</option>
                   <option value="terminal_hack">Terminal Hack</option>
                   <option value="photo_recognize">Threat / Photo Recognition</option>
                   <option value="logic_puzzle">Logic Puzzle</option>
+                  <option value="skribbl">🎨 Skribbl Drawing</option>
                 </select>
               </div>
 
@@ -599,6 +687,38 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               )}
+
+              {uiType === 'skribbl' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-indigo-400 text-xs font-bold uppercase mb-1.5 flex items-center gap-1.5">
+                      <Palette className="w-3.5 h-3.5" /> Target Word (Secret To Draw & Guess)
+                    </label>
+                    <input 
+                      type="text" 
+                      value={skribblWord} 
+                      onChange={e => setSkribblWord(e.target.value)} 
+                      className="w-full bg-slate-950 border border-indigo-500/40 p-3.5 rounded-xl text-indigo-200 text-sm outline-none focus:border-indigo-500 font-semibold" 
+                      placeholder="e.g. Firewall, Bitcoin, Phishing, Quantum" 
+                      required 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 text-xs font-semibold uppercase mb-1.5">Category / Clue Directive</label>
+                    <input 
+                      type="text" 
+                      value={skribblCategory} 
+                      onChange={e => setSkribblCategory(e.target.value)} 
+                      className="w-full bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-slate-100 text-sm outline-none focus:border-rose-500" 
+                      placeholder="e.g. Cybersecurity, Networking, Crypto" 
+                    />
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-800/60 text-xs text-indigo-300 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <span>When broadcasted live, students receive masked blanks with progressive hints on their phones, while stage displays show live guesses and scores.</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="pt-2">
@@ -754,7 +874,9 @@ export default function AdminDashboard() {
                   {filteredBlocks.map((block) => {
                     const isLive = liveState?.status === 'playing' && liveState?.activeQuestion?.id === block.id;
                     const isUsed = block.isUsed;
-                    const textLabel = block.payload.question || block.payload.missionText || block.payload.prompt || block.payload.puzzleText;
+                    const textLabel = block.type === 'skribbl'
+                      ? `🎨 Word: "${block.payload?.word}" (${block.payload?.category || 'Tech'})`
+                      : (block.payload?.question || block.payload?.missionText || block.payload?.prompt || block.payload?.puzzleText || 'Challenge Block');
 
                     return (
                       <div 
@@ -769,8 +891,12 @@ export default function AdminDashboard() {
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {isLive && <div className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping shrink-0" />}
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
-                            {block.type}
+                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md uppercase tracking-wider shrink-0 border ${
+                            block.type === 'skribbl'
+                              ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                              : 'bg-slate-800 text-slate-300 border-slate-700'
+                          }`}>
+                            {block.type === 'skribbl' ? '🎨 Skribbl' : block.type}
                           </span>
                           <span className={`text-sm font-semibold truncate ${
                             isLive ? 'text-rose-300' : isUsed ? 'text-slate-500 line-through' : 'text-slate-200'

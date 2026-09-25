@@ -3,7 +3,7 @@ import { db } from '../../../config/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
-export default function PlayerRoundReview({ player }) {
+export default function PlayerRoundReview({ player, gameState }) {
   const [lastAnswer, setLastAnswer] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -15,28 +15,83 @@ export default function PlayerRoundReview({ player }) {
 
     // 1. Instant check from local cache to avoid Firestore read storm across 400 clients
     try {
+      // If server specified the completed question ID, check that specific answer record first
+      const completedQ = gameState?.lastCompletedQuestion;
+      if (completedQ?.id) {
+        const specificRaw = localStorage.getItem(`answer_${player.pin}_${completedQ.id}`);
+        if (specificRaw) {
+          try {
+            const parsed = JSON.parse(specificRaw);
+            if (parsed) {
+              setLastAnswer({
+                questionText: completedQ.questionText || parsed.questionText || 'Latest Arena Challenge',
+                submittedAnswer: parsed.submittedAnswer || parsed.answer || '',
+                answer: parsed.submittedAnswer || parsed.answer || '',
+                isCorrect: Boolean(parsed.isCorrect),
+                pointsAwarded: parsed.pointsAwarded || 0,
+                questionType: completedQ.type || parsed.questionType || 'mcq',
+                explanation: parsed.explanation || '',
+                createdAt: parsed.createdAt || parsed.timestamp || 0
+              });
+              setLoading(false);
+              return;
+            }
+          } catch { /* malformed — fallback */ }
+        }
+      }
+
+      // First check direct latest answer pointer
+      const latestDirectRaw = localStorage.getItem(`latest_answer_${player.pin}`);
+      if (latestDirectRaw) {
+        const parsed = JSON.parse(latestDirectRaw);
+        if (parsed && (parsed.submittedAnswer || parsed.answer || parsed.pointsAwarded !== undefined)) {
+          setLastAnswer({
+            questionText: parsed.questionText || 'Latest Arena Challenge',
+            submittedAnswer: parsed.submittedAnswer || parsed.answer || '',
+            answer: parsed.submittedAnswer || parsed.answer || '',
+            isCorrect: Boolean(parsed.isCorrect),
+            pointsAwarded: parsed.pointsAwarded || 0,
+            questionType: parsed.questionType || 'mcq',
+            explanation: parsed.explanation || '',
+            createdAt: parsed.createdAt || parsed.timestamp || 0
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Fallback: scan all answer keys for this player and pick the newest by timestamp
       const prefix = `answer_${player.pin}_`;
       let latestLocal = null;
+      let latestTime = 0;
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith(prefix)) {
           const raw = localStorage.getItem(key);
           if (raw) {
-            const parsed = JSON.parse(raw);
-            latestLocal = parsed;
+            try {
+              const parsed = JSON.parse(raw);
+              const itemTime = Number(parsed.createdAt || parsed.timestamp || parsed.createdAtMs || 0);
+              // Pick candidate with newest timestamp, or if no timestamps, prefer entries that have answers
+              if (!latestLocal || itemTime > latestTime || (!latestTime && (parsed.submittedAnswer || parsed.answer))) {
+                latestLocal = parsed;
+                latestTime = itemTime;
+              }
+            } catch { /* malformed item — skip */ }
           }
         }
       }
 
-      if (latestLocal) {
+      if (latestLocal && (latestLocal.submittedAnswer || latestLocal.answer || latestLocal.pointsAwarded !== undefined)) {
         setLastAnswer({
           questionText: latestLocal.questionText || 'Latest Arena Challenge',
-          submittedAnswer: latestLocal.answer,
-          answer: latestLocal.answer,
-          isCorrect: latestLocal.isCorrect,
-          pointsAwarded: latestLocal.pointsAwarded,
+          submittedAnswer: latestLocal.submittedAnswer || latestLocal.answer || '',
+          answer: latestLocal.submittedAnswer || latestLocal.answer || '',
+          isCorrect: Boolean(latestLocal.isCorrect),
+          pointsAwarded: latestLocal.pointsAwarded || 0,
           questionType: latestLocal.questionType || 'mcq',
-          explanation: latestLocal.explanation || ''
+          explanation: latestLocal.explanation || '',
+          createdAt: latestTime
         });
         setLoading(false);
         return;
@@ -45,23 +100,51 @@ export default function PlayerRoundReview({ player }) {
       console.warn("Local review read fallback to network:", localErr);
     }
 
-    // 2. Network fallback
+    // 2. Network fallback (queries answers & skribblGuesses)
     const fetchLatestSubmission = async () => {
       try {
         setLoading(true);
-        const answersRef = collection(db, 'events', 'samarambh', 'answers');
-        const q = query(answersRef, where("pin", "==", player.pin));
-        
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          let submissions = [];
+        const submissions = [];
+
+        // Check standard answers collection
+        try {
+          const answersRef = collection(db, 'events', 'samarambh', 'answers');
+          const q = query(answersRef, where("pin", "==", player.pin));
+          const snapshot = await getDocs(q);
           snapshot.forEach((docSnap) => {
             submissions.push({ id: docSnap.id, ...docSnap.data() });
           });
+        } catch (ansErr) {
+          console.warn("Answers review query error:", ansErr);
+        }
 
+        // Also check skribblGuesses collection
+        try {
+          const skribblRef = collection(db, 'events', 'samarambh', 'skribblGuesses');
+          const skribblQ = query(skribblRef, where("pin", "==", player.pin));
+          const skribblSnap = await getDocs(skribblQ);
+          skribblSnap.forEach((docSnap) => {
+            const data = docSnap.data();
+            submissions.push({
+              id: docSnap.id,
+              questionText: `🎨 Skribbl Round ${data.roundIndex || ''}: Word Drawing`,
+              submittedAnswer: data.text,
+              answer: data.text,
+              isCorrect: Boolean(data.isCorrect),
+              pointsAwarded: data.pointsAwarded || 0,
+              questionType: 'skribbl',
+              createdAtMs: data.createdAtMs || 0,
+              timestamp: data.timestamp
+            });
+          });
+        } catch (skribblErr) {
+          console.warn("Skribbl review query error:", skribblErr);
+        }
+
+        if (submissions.length > 0) {
           submissions.sort((a, b) => {
-            const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
-            const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+            const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.createdAtMs || a.createdAt || 0);
+            const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.createdAtMs || b.createdAt || 0);
             return timeB - timeA;
           });
 
@@ -75,7 +158,7 @@ export default function PlayerRoundReview({ player }) {
     };
 
     fetchLatestSubmission();
-  }, [player?.pin]);
+  }, [player?.pin, gameState?.lastCompletedQuestion?.id]);
 
   if (loading) {
     return (
@@ -97,6 +180,7 @@ export default function PlayerRoundReview({ player }) {
   }
 
   const isPhishingRound = lastAnswer.questionType === 'photo_recognize';
+  const displayAnswer = lastAnswer.submittedAnswer || lastAnswer.answer || '';
 
   return (
     <div className={`w-full border rounded-2xl p-4 md:p-5 my-3 text-left transition-all ${
@@ -129,13 +213,21 @@ export default function PlayerRoundReview({ player }) {
         </span>
       </div>
 
-      <p className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
-        {lastAnswer.questionText}
-      </p>
+      {lastAnswer.questionText && (
+        <p className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
+          {lastAnswer.questionText}
+        </p>
+      )}
 
       <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs flex justify-between items-center">
         <span className="text-slate-500 dark:text-slate-400">Your Answer:</span>
-        <span className="font-bold text-slate-900 dark:text-white">{lastAnswer.submittedAnswer || lastAnswer.answer}</span>
+        <span className="font-bold text-slate-900 dark:text-white">
+          {displayAnswer ? (
+            displayAnswer
+          ) : (
+            <span className="text-slate-400 italic font-normal">No answer submitted</span>
+          )}
+        </span>
       </div>
 
       <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs flex justify-between items-center mt-2">

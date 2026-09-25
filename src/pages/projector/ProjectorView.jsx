@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState, useMemo, useRef } from 'react';
 import { GameContext } from '../../context/GameContext';
 import { db } from '../../config/firebase';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, limit } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, 
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import StageCountdown from '../../components/StageCountdown';
 import GlassAvatar from '../../components/GlassAvatar';
+import SkribblStage from './components/SkribblStage';
 
 // Option badge designs with high-contrast big-screen presence
 const MCQ_BADGES = [
@@ -183,7 +184,7 @@ export default function ProjectorView() {
     } catch (err) {
       console.warn("Submissions query setup:", err);
     }
-  }, [gameState?.status, gameState?.activeQuestion]);
+  }, [gameState?.status, gameState?.activeQuestion?.id]);
 
   // 3. Question Timer Synchronization
   useEffect(() => {
@@ -233,25 +234,26 @@ export default function ProjectorView() {
     return () => unsubTeams();
   }, []);
 
-  // 4. Leaderboard Data Listener
+  // 4. Leaderboard Data Listener (bounded to Top 10 with server-side sorting)
   useEffect(() => {
     if (gameState?.status !== 'leaderboard') return;
     const isTeamMode = gameState.gameMode === 'team';
-    const collectionPath = isTeamMode ? 'events/samarambh/teams' : 'players';
+    const qLeaders = isTeamMode
+      ? query(collection(db, 'events', 'samarambh', 'teams'), orderBy('totalScore', 'desc'), limit(10))
+      : query(collection(db, 'players'), orderBy('score', 'desc'), limit(10));
     
-    const unsubscribe = onSnapshot(collection(db, collectionPath), (snapshot) => {
+    const unsubscribe = onSnapshot(qLeaders, (snapshot) => {
       let results = [];
       snapshot.forEach(doc => {
         const data = doc.data();
         results.push({
           id: doc.id,
-          name: isTeamMode ? data.teamName : data.name,
+          name: isTeamMode ? (data.teamName || data.name) : data.name,
           score: isTeamMode ? (data.totalScore || 0) : (data.score || 0),
           teamCode: data.teamCode || null,
           teamName: data.teamName || null
         });
       });
-      results.sort((a, b) => b.score - a.score);
       setLeaders(results.slice(0, 8));
     }, (error) => {
       console.warn("Leaderboard listener error:", error.message);
@@ -585,6 +587,24 @@ export default function ProjectorView() {
     const qData = gameState?.activeQuestion || {};
     const payload = qData.payload || {};
     const qType = qData.type || 'mcq';
+
+    // SKRIBBL DRAW & GUESS: takes over the stage with its canvas, hint, and live guess feed
+    if (qType === 'skribbl') {
+      return (
+        <div className="min-h-screen bg-[#070b14] text-white flex flex-col p-6 md:p-10 relative overflow-hidden select-none font-sans">
+          <TopLeftLogoBadge />
+          {renderBackgroundVideo()}
+          {renderOperatorBar()}
+          <SkribblStage
+            activeQ={qData}
+            gameState={gameState}
+            playerCount={playerCount}
+            embedded
+          />
+        </div>
+      );
+    }
+
     const isTeamMode = gameState?.gameMode === 'team';
 
     // Extract challenge contents across formats

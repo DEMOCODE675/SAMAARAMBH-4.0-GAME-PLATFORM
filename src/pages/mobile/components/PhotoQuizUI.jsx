@@ -192,12 +192,21 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
     };
 
     try {
-      localStorage.setItem(`answer_${player.pin}_${qId}`, JSON.stringify({
+      const localRecord = {
+        questionId: qId,
+        questionType: 'photo_recognize',
+        questionText: payload?.question || 'Phishing / Fraud Detection',
+        submittedAnswer: selected.trim(),
         answer: selected.trim(),
+        explanation: payload?.explanation || '',
         timeTaken: Number(timeTaken.toFixed(1)),
         isCorrect,
-        pointsAwarded
-      }));
+        pointsAwarded,
+        createdAt: Date.now(),
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`answer_${player.pin}_${qId}`, JSON.stringify(localRecord));
+      localStorage.setItem(`latest_answer_${player.pin}`, JSON.stringify(localRecord));
       localStorage.setItem(`submitted_${player.pin}_${qId}`, 'true');
     } catch (e) {
       console.warn("Local storage write error:", e);

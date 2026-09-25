@@ -171,12 +171,20 @@ export default function QuizUI({ payload, setHasSubmitted: setParentSubmitted })
 
     // Store in localStorage immediately so student response and points are preserved
     try {
-      localStorage.setItem(`answer_${player.pin}_${qId}`, JSON.stringify({
+      const localRecord = {
+        questionId: qId,
+        questionType: 'mcq',
+        questionText: payload?.question || 'Quiz Challenge',
+        submittedAnswer: selected,
         answer: selected,
         timeTaken: Number(timeTaken.toFixed(1)),
         isCorrect,
-        pointsAwarded
-      }));
+        pointsAwarded,
+        createdAt: Date.now(),
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`answer_${player.pin}_${qId}`, JSON.stringify(localRecord));
+      localStorage.setItem(`latest_answer_${player.pin}`, JSON.stringify(localRecord));
       localStorage.setItem(`submitted_${player.pin}_${qId}`, 'true');
     } catch (e) {
       console.warn("Local storage write error:", e);
