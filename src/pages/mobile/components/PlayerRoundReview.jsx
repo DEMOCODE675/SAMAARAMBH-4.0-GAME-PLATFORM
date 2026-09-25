@@ -158,7 +158,7 @@ export default function PlayerRoundReview({ player, gameState }) {
     };
 
     fetchLatestSubmission();
-  }, [player?.pin, gameState?.lastCompletedQuestion?.id]);
+  }, [player?.pin, gameState?.lastCompletedQuestion]);
 
   if (loading) {
     return (
@@ -236,6 +236,15 @@ export default function PlayerRoundReview({ player, gameState }) {
           {lastAnswer.isCorrect ? `+${(lastAnswer.pointsAwarded || 1000).toLocaleString()} pts` : '0 pts'}
         </span>
       </div>
+
+      {!lastAnswer.isCorrect && (gameState?.lastCompletedQuestion?.correctAnswer || lastAnswer.correctAnswer) && (
+        <div className="bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 p-3 rounded-xl text-xs flex justify-between items-center mt-2">
+          <span className="text-emerald-700 dark:text-emerald-400 font-semibold">Correct Answer:</span>
+          <span className="font-bold text-emerald-900 dark:text-emerald-200">
+            {gameState?.lastCompletedQuestion?.correctAnswer || lastAnswer.correctAnswer}
+          </span>
+        </div>
+      )}
 
       {isPhishingRound && lastAnswer.explanation && (
         <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 p-3 rounded-xl mt-3 text-xs">

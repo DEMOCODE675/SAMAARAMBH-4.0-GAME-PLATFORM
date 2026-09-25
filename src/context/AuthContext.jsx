@@ -45,7 +45,9 @@ export function AuthProvider({ children }) {
     return localStorage.getItem('techarena_pin') || null;
   });
   const [player, setPlayer] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    return Boolean(localStorage.getItem('techarena_pin'));
+  });
 
   // Maintain active real-time listener for current player profile
   useEffect(() => {
@@ -153,7 +155,14 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{ player, loading, registerNewPlayer, signInWithPin, logout }}>
-      {!loading && children}
+      {loading ? (
+        <div className="min-h-screen bg-[#080c16] flex items-center justify-center p-6 text-center select-none">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-9 h-9 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+            <span className="text-xs font-mono uppercase tracking-widest text-slate-400">Connecting to Arena...</span>
+          </div>
+        </div>
+      ) : children}
     </AuthContext.Provider>
   );
 }

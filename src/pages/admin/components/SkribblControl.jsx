@@ -290,11 +290,19 @@ export default function SkribblControl() {
   const endGame = async () => {
     setIsBusy(true);
     try {
+      const lastRound = activeRound;
+      const revealedWord = secretRef.current.word || lastRound?.word || armedWord || '';
       await setDoc(EVENT_DOC, {
         status: 'leaderboard',
         gameMode: 'solo',
         skribbl: null,
         activeQuestion: null,
+        lastCompletedQuestion: lastRound ? {
+          id: lastRound.roundId || lastRound.id,
+          type: 'skribbl',
+          questionText: `🎨 Skribbl Round ${lastRound.roundIndex || 1}: Draw & Guess`,
+          correctAnswer: revealedWord
+        } : null,
         updatedAt: new Date()
       }, { merge: true });
       sessionStorage.removeItem(WORD_KEY);

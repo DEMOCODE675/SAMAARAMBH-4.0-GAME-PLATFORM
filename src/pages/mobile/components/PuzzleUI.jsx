@@ -129,7 +129,7 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
       const localRecord = {
         questionId: qId,
         questionType: 'logic_puzzle',
-        questionText: payload?.puzzlePrompt || payload?.riddle || 'Logic Puzzle',
+        questionText: payload?.puzzleText || payload?.puzzlePrompt || payload?.riddle || 'Logic Puzzle',
         submittedAnswer: submittedVal,
         answer: submittedVal,
         timeTaken: Number(timeTaken.toFixed(1)),

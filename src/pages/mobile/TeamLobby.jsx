@@ -13,7 +13,8 @@ import {
   Check, 
   Sun, 
   Moon,
-  Clock
+  Clock,
+  LogOut
 } from 'lucide-react';
 import GlassAvatar from '../../components/GlassAvatar';
 
@@ -139,6 +140,27 @@ export default function TeamLobby({ onBack }) {
     }
   };
 
+  const handleLeaveTeam = async () => {
+    if (!player?.pin) return;
+    if (!window.confirm("Are you sure you want to leave this squad?")) return;
+    setLoading(true);
+    try {
+      const playerRef = doc(db, 'players', player.pin);
+      await updateDoc(playerRef, {
+        teamCode: null,
+        teamName: null,
+        isLeader: false
+      });
+      setActiveTeam(null);
+      setRoster([]);
+    } catch (err) {
+      console.warn("Failed to leave team:", err);
+      setError("Failed to leave squad.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ==========================================
   // VIEW 1: ACTIVE SQUAD WAITING ROOM
   // ==========================================
@@ -259,6 +281,19 @@ export default function TeamLobby({ onBack }) {
             <div className="mt-5 flex items-center justify-center gap-2 text-xs font-medium text-amber-500 dark:text-amber-400">
               <Clock className="w-3.5 h-3.5 animate-spin" />
               <span>Awaiting host to launch round...</span>
+            </div>
+
+            {/* Leave Squad Option */}
+            <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800/80">
+              <button
+                type="button"
+                onClick={handleLeaveTeam}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300 transition-colors py-1 px-3 rounded-lg hover:bg-rose-500/10 cursor-pointer disabled:opacity-50"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Leave Squad</span>
+              </button>
             </div>
           </motion.div>
         </div>

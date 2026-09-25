@@ -347,7 +347,7 @@ export default function AdminDashboard() {
         lastCompletedQuestion: {
           id: qId,
           type: activeQ.type,
-          questionText: activeQ.payload?.question || activeQ.payload?.commandPrompt || activeQ.payload?.puzzlePrompt || 'Challenge Concluded',
+          questionText: activeQ.payload?.question || activeQ.payload?.missionText || activeQ.payload?.prompt || activeQ.payload?.puzzleText || (activeQ.type === 'skribbl' ? `🎨 Skribbl: ${correctVal}` : 'Challenge Concluded'),
           correctAnswer: correctVal
         },
         skribbl: null,

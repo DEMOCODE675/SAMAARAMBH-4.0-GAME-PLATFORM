@@ -164,18 +164,16 @@ export default function ProjectorView() {
   }, []);
 
   // 2. Listen to submission count during active question
+  const activeQuestionId = gameState?.activeQuestion?.id;
   useEffect(() => {
-    if (gameState?.status !== 'playing' || !gameState?.activeQuestion) {
+    if (gameState?.status !== 'playing' || !activeQuestionId) {
       const timer = setTimeout(() => setSubmissionCount(0), 0);
       return () => clearTimeout(timer);
     }
 
-    const qId = gameState.activeQuestion.id;
-    if (!qId) return;
-
     try {
       const answersRef = collection(db, 'events', 'samarambh', 'answers');
-      const q = query(answersRef, where("questionId", "==", qId));
+      const q = query(answersRef, where("questionId", "==", activeQuestionId));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         setSubmissionCount(snapshot.size);
       }, (err) => console.warn("Answers count error:", err));
@@ -184,7 +182,7 @@ export default function ProjectorView() {
     } catch (err) {
       console.warn("Submissions query setup:", err);
     }
-  }, [gameState?.status, gameState?.activeQuestion?.id]);
+  }, [gameState?.status, activeQuestionId]);
 
   // 3. Question Timer Synchronization
   useEffect(() => {
