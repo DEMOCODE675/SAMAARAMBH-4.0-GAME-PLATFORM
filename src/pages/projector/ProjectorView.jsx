@@ -446,6 +446,20 @@ export default function ProjectorView() {
   // =========================================================================
   if (gameState?.status === 'leaderboard') {
     const isTeamMode = gameState.gameMode === 'team';
+    const completedQ = gameState.lastCompletedQuestion || gameState.activeQuestion;
+    const roundText = completedQ?.round || (gameState.round ? `Round ${gameState.round}` : null);
+    const questionNum = completedQ?.questionNumber || (completedQ?.roundIndex ? completedQ.roundIndex : null);
+
+    let roundResultLabel = '';
+    if (roundText && questionNum) {
+      roundResultLabel = `${roundText} · Question ${questionNum} Results`;
+    } else if (roundText) {
+      roundResultLabel = `${roundText} Results`;
+    } else if (questionNum) {
+      roundResultLabel = `Question ${questionNum} Results`;
+    } else {
+      roundResultLabel = isTeamMode ? 'Squad Battle Standings' : 'Solo Arena Standings';
+    }
 
     return (
       <div className="min-h-screen bg-[#070b14] text-white flex flex-col items-center justify-between p-8 md:p-12 overflow-hidden relative select-none font-sans">
@@ -460,9 +474,9 @@ export default function ProjectorView() {
           transition={{ duration: 0.6 }} 
           className="text-center z-10 pt-4"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-400 text-xs md:text-sm font-bold uppercase tracking-[0.25em] mb-2 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-400 text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-2 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
             <Trophy className="w-4 h-4 text-amber-400" />
-            <span>{isTeamMode ? 'Team' : 'Solo'}</span>{/*we add here is which is round and question of this round results*/}
+            <span>{roundResultLabel}</span>
           </div>
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-rose-300 to-indigo-300 drop-shadow-[0_0_40px_rgba(245,158,11,0.4)]">

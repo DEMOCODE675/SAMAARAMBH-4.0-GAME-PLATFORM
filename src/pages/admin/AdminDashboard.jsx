@@ -180,6 +180,17 @@ export default function AdminDashboard() {
         isUsed: true
       });
 
+      // Calculate question sequence within this round
+      const roundBlocks = savedBlocks.filter(b => b.round === block.round);
+      const sortedRoundBlocks = [...roundBlocks].sort((a, b) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds || 0);
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds || 0);
+        return timeA - timeB;
+      });
+      const qIndex = sortedRoundBlocks.findIndex(b => b.id === block.id);
+      const questionNumber = qIndex >= 0 ? qIndex + 1 : 1;
+      const totalInRound = sortedRoundBlocks.length || 1;
+
       // 2. Push to Active Event Controller
       if (block.type === 'skribbl') {
         const word = block.payload?.word || '';
@@ -192,16 +203,19 @@ export default function AdminDashboard() {
           status: 'playing',
           gameMode: broadcastMode,
           skribbl: {
-            roundIndex: 1,
-            totalRounds: 1,
+            roundIndex: questionNumber,
+            totalRounds: totalInRound,
             phase: 'drawing',
             wordLocked: true
           },
           activeQuestion: {
             id: block.id,
+            round: block.round || 'Round 1',
+            questionNumber: questionNumber,
+            totalInRound: totalInRound,
             type: 'skribbl',
             roundId: block.id,
-            roundIndex: 1,
+            roundIndex: questionNumber,
             timeLimit: Number(block.timeLimit) || 75,
             wordHash,
             hint: { display: hint.display, reveals: hint.reveals },
@@ -221,6 +235,9 @@ export default function AdminDashboard() {
           gameMode: broadcastMode, 
           activeQuestion: {
             id: block.id,
+            round: block.round || 'Round 1',
+            questionNumber: questionNumber,
+            totalInRound: totalInRound,
             type: block.type,
             timeLimit: block.timeLimit,
             payload: block.payload,
@@ -346,6 +363,9 @@ export default function AdminDashboard() {
         activeQuestion: null,
         lastCompletedQuestion: {
           id: qId,
+          round: activeQ.round || liveState?.activeQuestion?.round || 'Round 1',
+          questionNumber: activeQ.questionNumber || null,
+          totalInRound: activeQ.totalInRound || null,
           type: activeQ.type,
           questionText: activeQ.payload?.question || activeQ.payload?.missionText || activeQ.payload?.prompt || activeQ.payload?.puzzleText || (activeQ.type === 'skribbl' ? `🎨 Skribbl: ${correctVal}` : 'Challenge Concluded'),
           correctAnswer: correctVal
@@ -355,7 +375,7 @@ export default function AdminDashboard() {
       }, { merge: true });
       sessionStorage.removeItem('techarena_skribbl_word');
 
-      setStatusMsg(`🏆 Scores calculated for ${scoredPlayers.size} entries! Showing Leaderboard.`);
+      setStatusMsg(`Scores calculated for ${scoredPlayers.size} entries! Showing Leaderboard.`);
       setTimeout(() => setStatusMsg(''), 4000);
     } catch (err) {
       console.error("Score calculation error:", err);
@@ -896,7 +916,7 @@ export default function AdminDashboard() {
                               ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
                               : 'bg-slate-800 text-slate-300 border-slate-700'
                           }`}>
-                            {block.type === 'skribbl' ? '🎨 Skribbl' : block.type}
+                            {block.type === 'skribbl' ? 'Skribbl' : block.type}
                           </span>
                           <span className={`text-sm font-semibold truncate ${
                             isLive ? 'text-rose-300' : isUsed ? 'text-slate-500 line-through' : 'text-slate-200'

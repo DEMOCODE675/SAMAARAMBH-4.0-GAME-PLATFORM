@@ -228,7 +228,7 @@ export default function SkribblControl() {
         });
       }
       setCustomWord('');
-      flash('🖌️ Drawing phase live — guessers, get typing!');
+      flash('Drawing phase live — guessers, get typing!');
     } catch (err) {
       console.error(err);
       flash('❌ Failed to start drawing phase.');
@@ -250,7 +250,7 @@ export default function SkribblControl() {
         updatedAt: new Date()
       });
       sessionStorage.removeItem(WORD_KEY);
-      flash(auto ? '⏰ Time up — word revealed!' : '🏁 Round revealed!');
+      flash(auto ? 'Time up — word revealed!' : 'Round revealed!');
     } catch (err) {
       console.error(err);
       flash('❌ Failed to reveal round.');
@@ -278,7 +278,7 @@ export default function SkribblControl() {
       });
       setCustomWord('');
       setSuggestions(pickRandomWords(3));
-      flash(`🎯 Round ${nextIndex} armed!`);
+      flash(`Round ${nextIndex} armed!`);
     } catch (err) {
       console.error(err);
       flash('❌ Failed to arm next round.');
@@ -299,6 +299,8 @@ export default function SkribblControl() {
         activeQuestion: null,
         lastCompletedQuestion: lastRound ? {
           id: lastRound.roundId || lastRound.id,
+          round: lastRound.round || 'Round 2',
+          questionNumber: lastRound.roundIndex || 1,
           type: 'skribbl',
           questionText: `🎨 Skribbl Round ${lastRound.roundIndex || 1}: Draw & Guess`,
           correctAnswer: revealedWord

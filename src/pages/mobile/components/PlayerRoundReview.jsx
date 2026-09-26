@@ -209,7 +209,9 @@ export default function PlayerRoundReview({ player, gameState }) {
             ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-200 dark:border-emerald-700' 
             : 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/50 dark:text-rose-200 dark:border-rose-700'
         }`}>
-          Round Review
+          {gameState?.lastCompletedQuestion?.round 
+            ? `${gameState.lastCompletedQuestion.round}${gameState.lastCompletedQuestion.questionNumber ? ` · Q${gameState.lastCompletedQuestion.questionNumber}` : ''}` 
+            : 'Round Review'}
         </span>
       </div>
 
