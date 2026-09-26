@@ -367,7 +367,7 @@ export default function AdminDashboard() {
           questionNumber: activeQ.questionNumber || null,
           totalInRound: activeQ.totalInRound || null,
           type: activeQ.type,
-          questionText: activeQ.payload?.question || activeQ.payload?.missionText || activeQ.payload?.prompt || activeQ.payload?.puzzleText || (activeQ.type === 'skribbl' ? `🎨 Skribbl: ${correctVal}` : 'Challenge Concluded'),
+          questionText: activeQ.payload?.question || activeQ.payload?.missionText || activeQ.payload?.prompt || activeQ.payload?.puzzleText || (activeQ.type === 'skribbl' ? `Skribbl: ${correctVal}` : 'Challenge Concluded'),
           correctAnswer: correctVal
         },
         skribbl: null,
@@ -530,7 +530,7 @@ export default function AdminDashboard() {
                   <option value="terminal_hack">Terminal Hack</option>
                   <option value="photo_recognize">Threat / Photo Recognition</option>
                   <option value="logic_puzzle">Logic Puzzle</option>
-                  <option value="skribbl">🎨 Skribbl Drawing</option>
+                  <option value="skribbl">Skribbl Drawing</option>
                 </select>
               </div>
 
