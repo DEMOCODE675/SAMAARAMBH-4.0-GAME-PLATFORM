@@ -58,20 +58,13 @@ const MCQ_BADGES = [
 // Top-Left Brand Logo Badge (declared outside to avoid React re-creation in render)
 function TopLeftLogoBadge() {
   return (
-    <div className="absolute top-6 left-6 z-40 flex items-center gap-3.5 px-4 py-2.5 rounded-2xl select-none">
+    <div className="absolute top-6 left-6 z-40 select-none">
       <img 
         src="/images/logo.jpg" 
         onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
         alt="MLSA MIET Organizer" 
         className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-xl p-1 bg-white/10 border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.2)]" 
       />
-      <div className="hidden sm:flex flex-col">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-black tracking-wider text-white">TECH<span className="text-amber-400">ARENA</span></span>
-       {  /* <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">4.0</span>*/}
-        </div>
-        <span className="text-[11px] font-medium text-slate-400 tracking-wide">MLSA MIET Chapter</span>
-      </div>
     </div>
   );
 }

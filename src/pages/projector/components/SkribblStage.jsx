@@ -77,15 +77,9 @@ export default function SkribblStage({ activeQ, gameState, playerCount, embedded
         : 'min-h-screen flex flex-col p-6 md:p-10'
     } bg-[#070b14] text-white relative overflow-hidden select-none font-sans`}>
       {/* Top header bar */}
-      <header className="flex justify-between items-center border-b border-white/15 pb-5 z-10">
+      <header className="flex justify-between items-center border-b border-white/15 pb-5 z-10 pl-20 md:pl-24">
         <div className="flex items-center gap-3">
-          <span className="w-3.5 h-3.5 rounded-full bg-rose-500 animate-ping" />
-          <div className="flex flex-col">
-            <span className="text-sm font-extrabold uppercase tracking-wider text-rose-400">Live Drawing Challenge</span>
-            <span className="text-xs text-slate-400">
-              Round {activeQ?.roundIndex || '·'} · Type your guess on your phone!
-            </span>
-          </div>
+          {/* Top-left area kept clean for organizer logo */}
         </div>
 
         <div className="flex items-center gap-4">
