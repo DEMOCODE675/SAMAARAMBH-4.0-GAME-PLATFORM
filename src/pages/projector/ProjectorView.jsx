@@ -402,11 +402,11 @@ export default function ProjectorView() {
                 Connect your mobile phone to the competition grid. Enter your assigned PIN to join your squad or solo ranking.
               </p> */}
 
-              <div className="w-full pt-4">
-                <div className="p-3.5 rounded-xl bg-black/60 border border-white/15 text-amber-300 font-mono text-base md:text-xl font-bold break-all shadow-inner">
-                  {eventUrl}
-                </div>
-              </div>
+              <div className="w-full pt-5">
+  <div className="p-3.5 rounded-xl bg-black/60 border border-white/15 text-amber-300 font-mono text-sm sm:text-base md:text-lg lg:text-xl font-bold truncate shadow-inner">
+    {eventUrl}
+  </div>
+</div>
             </div>
 
             {/* Right QR Code */}
