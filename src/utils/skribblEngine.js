@@ -221,7 +221,7 @@ export function replayStrokeDocs(docs) {
 // Round lifecycle helpers
 // ---------------------------------------------------------------------------
 
-export const SKRIBBL_SETUP_SECONDS = 5; // matches platform "Deploying" gate
+export const SKRIBBL_SETUP_SECONDS = 10; // matches platform "Deploying" gate
 
 // Elapsed drawing seconds derived from a Firestore Timestamp start.
 export function skribblElapsedSeconds(startTime, durationSec) {

@@ -26,7 +26,7 @@ export default function HomePortal() {
   const portals = [
     {
       to: '/play',
-      badge: 'Contestant Terminal',
+      badge: 'Contestant Room',
       title: 'Player Controller',
       actionLabel: 'Enter Arena',
       icon: Smartphone,
@@ -54,7 +54,7 @@ export default function HomePortal() {
     },
     {
       to: '/admin',
-      badge: 'Mission Operator',
+      badge: 'Admin Panel',
       title: 'Control Center',
       actionLabel: 'Open Dashboard',
       icon: Sliders,

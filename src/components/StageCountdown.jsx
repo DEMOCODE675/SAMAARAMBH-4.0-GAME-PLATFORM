@@ -1,14 +1,14 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon, Clock, Zap, Sparkles } from 'lucide-react';
+import { Sun, Moon, Clock, Sparkles } from 'lucide-react';
 
 /**
  * StageCountdown - High impact, modern, cinematic countdown component
  * Supports both mobile contestant controllers and stage auditorium projectors
  */
 export default function StageCountdown({
-  seconds = 5,
-  maxSeconds = 5,
+  seconds = 10,
+  maxSeconds = 10,
   mode = 'mobile', // 'mobile' | 'projector'
   isDarkMode = true,
   onToggleTheme,
@@ -71,33 +71,15 @@ export default function StageCountdown({
                 {seconds}
               </motion.span>
             </AnimatePresence>
-            <span className="text-xs uppercase tracking-[0.3em] text-amber-200/80 font-bold -mt-2">
-              SEC REMAINING
-            </span>
           </div>
-        </div>
-
-        {/* Clean Typographic Meta Hierarchy */}
-        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-4 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-          <Zap className="w-4 h-4 text-amber-400 animate-pulse" />
-          <span>{badgeText}</span>
         </div>
 
         <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-white tracking-wider uppercase mb-3 drop-shadow-md">
           {title}
         </h2>
-        
-        <p className="text-base md:text-xl text-slate-300 max-w-2xl mx-auto font-medium leading-relaxed">
-          {subtitle}
-        </p>
 
         {/* Tactical status readout */}
         <div className="mt-8 flex items-center justify-center gap-6 text-xs md:text-sm font-mono text-slate-400 border-t border-white/10 pt-4">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span className="text-slate-300">STAGE SYNC: VERIFIED</span>
-          </div>
-          <span className="text-slate-600">|</span>
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-indigo-400" />
             <span>SPEED WINDOW: <strong className="text-white">{timeWindow}s</strong></span>

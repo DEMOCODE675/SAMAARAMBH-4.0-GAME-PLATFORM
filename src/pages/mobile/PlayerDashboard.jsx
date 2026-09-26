@@ -149,7 +149,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
       return { text: 'Round Live', bg: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' };
     }
     if (gameState?.status === 'leaderboard') {
-      return { text: 'Standings Ready', bg: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' };
+      return { text: 'Standings', bg: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' };
     }
     return { text: 'Ready', bg: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800' };
   };
@@ -197,10 +197,9 @@ export default function PlayerDashboard({ onOpenTeam }) {
             />
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-base md:text-lg tracking-tight">
+                <span className="hidden md:inline font-extrabold text-base md:text-lg tracking-tight">
                   Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
                 </span>
-                
               </div>
              
             </div>
@@ -221,7 +220,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
               <span className={`text-[10px] uppercase font-sans font-semibold hidden sm:inline ${
                 isDarkMode ? 'text-slate-400' : 'text-slate-500'
               }`}>
-                My PIN:
+              Login PIN
               </span>
               <span className="font-bold tracking-widest text-indigo-600 dark:text-indigo-400 font-mono">
                 {player?.pin || '----'}
@@ -307,7 +306,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                   </span>
                 </div>
                 <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {player?.teamCode ? `Squad: ${myTeamRank.teamName}` : 'Competing individually'}
+                  {player?.teamCode ? `Squad: ${myTeamRank.teamName}` : 'Not in a Squad'}
                 </p>
               </div>
             </div>
@@ -678,7 +677,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                     <div>
                       <h4 className="text-sm font-bold">Competing Individually</h4>
                       <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        Join or create a team squad to battle together on the Squad board.
+                        Join or create a team squad to battle together.
                       </p>
                     </div>
                   </div>
@@ -686,7 +685,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                     onClick={onOpenTeam}
                     className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-4 py-2 rounded-xl transition-all shadow-sm"
                   >
-                    Enter Squad Lobby
+                    Create / Join Squad
                   </button>
                 </div>
               )}
@@ -881,7 +880,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
             <div>
               <h3 className="text-base font-bold">Disconnect Session?</h3>
               <p className={`text-xs mt-1 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Your score and rank are saved under your PIN. You can reconnect anytime.
+                Your score and rank are saved under your <span className="font-bold text-indigo-600 dark:text-indigo-400">Login PIN</span>. You can reconnect anytime with your Login PIN to continue competing. Disconnecting will log-out of this session.
               </p>
             </div>
             <div className="flex gap-2.5 pt-1">

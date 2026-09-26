@@ -7,17 +7,12 @@ import {
   Trophy, 
   Users, 
   Clock, 
-  QrCode, 
   Maximize2, 
   Minimize2, 
   Video, 
-  Sparkles, 
   Terminal, 
   HelpCircle, 
   CheckCircle2, 
-  Zap, 
-  Flame,
-  Radio,
   Image as ImageIcon
 } from 'lucide-react';
 import StageCountdown from '../../components/StageCountdown';
@@ -63,17 +58,17 @@ const MCQ_BADGES = [
 // Top-Left Brand Logo Badge (declared outside to avoid React re-creation in render)
 function TopLeftLogoBadge() {
   return (
-    <div className="absolute top-6 left-6 z-40 flex items-center gap-3.5 bg-black/60 backdrop-blur-xl border border-white/15 px-4 py-2.5 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)] select-none">
+    <div className="absolute top-6 left-6 z-40 flex items-center gap-3.5 px-4 py-2.5 rounded-2xl select-none">
       <img 
         src="/images/logo.jpg" 
         onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
         alt="MLSA MIET Organizer" 
-        className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-xl p-1 bg-white/10 border border-white/20 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" 
+        className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-xl p-1 bg-white/10 border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.2)]" 
       />
       <div className="hidden sm:flex flex-col">
         <div className="flex items-center gap-1.5">
           <span className="text-sm font-black tracking-wider text-white">TECH<span className="text-amber-400">ARENA</span></span>
-          <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">4.0</span>
+       {  /* <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">4.0</span>*/}
         </div>
         <span className="text-[11px] font-medium text-slate-400 tracking-wide">MLSA MIET Chapter</span>
       </div>
@@ -95,7 +90,7 @@ export default function ProjectorView() {
   const [submissionCount, setSubmissionCount] = useState(0);
 
   // Synchronized Timers
-  const [setupCountdown, setSetupCountdown] = useState(5); 
+  const [setupCountdown, setSetupCountdown] = useState(10); 
   const [questionTimer, setQuestionTimer] = useState(0);
 
   // Video Background Controls: 'auto' | 'firstbag' | 'leaderboard'
@@ -194,14 +189,14 @@ export default function ProjectorView() {
     const updateTimers = () => {
       const nowMs = Date.now();
       const elapsedSeconds = Math.max(0, Math.floor((nowMs - updatedAtMs) / 1000));
-      const remainingSetup = Math.min(5, Math.max(0, 5 - elapsedSeconds));
+      const remainingSetup = Math.min(10, Math.max(0, 10 - elapsedSeconds));
 
       if (remainingSetup > 0) {
         setSetupCountdown(remainingSetup);
         setQuestionTimer(questionDuration); 
       } else {
         setSetupCountdown(0);
-        const activeElapsed = elapsedSeconds - 5;
+        const activeElapsed = elapsedSeconds - 10;
         const remainingQuestionTime = Math.max(0, questionDuration - activeElapsed);
         setQuestionTimer(remainingQuestionTime);
       }
@@ -363,14 +358,14 @@ export default function ProjectorView() {
 
         {/* Top Status Pill */}
         <div className="z-10 pt-2 flex items-center gap-2">
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold tracking-wider uppercase shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+          {/*<div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold tracking-wider uppercase shadow-[0_0_20px_rgba(16,185,129,0.2)]">
             <Radio className="w-3.5 h-3.5 animate-pulse" />
             <span>Arena Lobby Live</span>
-          </div>
+          </div>*/}
 
           <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold tracking-wider">
             <Users className="w-3.5 h-3.5 text-indigo-400" />
-            <span><strong>{playerCount}</strong> Competitors In Arena</span>
+            <span><strong>{playerCount}</strong> Competitors Right Now</span>
           </div>
         </div>
 
@@ -382,17 +377,15 @@ export default function ProjectorView() {
             transition={{ duration: 0.7 }}
             className="mb-6 md:mb-8"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs md:text-sm font-bold uppercase tracking-[0.3em] mb-4 shadow-[0_0_25px_rgba(245,158,11,0.2)]">
+            {/*<div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs md:text-sm font-bold uppercase tracking-[0.3em] mb-4 shadow-[0_0_25px_rgba(245,158,11,0.2)]">
               <Sparkles className="w-4 h-4 text-amber-400" />
               <span>State-Level Annual Tech Symposium</span>
-            </div>
+            </div>*/}
 
             <h1 className="text-6xl sm:text-7xl md:text-9xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-amber-200 drop-shadow-[0_0_60px_rgba(99,102,241,0.5)]">
               SAMARAMBH 4.0
             </h1>
-            <p className="text-lg md:text-2xl text-slate-300 font-semibold tracking-widest uppercase mt-3">
-              Inter-College Cybersecurity & Coding Clash
-            </p>
+            
           </motion.div>
 
           {/* Join Instructions & QR Code Card */}
@@ -409,15 +402,14 @@ export default function ProjectorView() {
               </span>
 
               <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">
-                Scan & Enter PIN
+                Scan QR or Visit Link to Join
               </h2>
 
-              <p className="text-slate-300 text-sm md:text-base leading-relaxed">
+             {/* <p className="text-slate-300 text-sm md:text-base leading-relaxed">
                 Connect your mobile phone to the competition grid. Enter your assigned PIN to join your squad or solo ranking.
-              </p>
+              </p> */}
 
-              <div className="w-full pt-2">
-                <span className="text-xs text-slate-400 block mb-1 font-mono uppercase tracking-wider">Direct Access Link:</span>
+              <div className="w-full pt-4">
                 <div className="p-3.5 rounded-xl bg-black/60 border border-white/15 text-amber-300 font-mono text-base md:text-xl font-bold break-all shadow-inner">
                   {eventUrl}
                 </div>
@@ -433,17 +425,17 @@ export default function ProjectorView() {
                   className="w-48 h-48 md:w-56 md:h-56 object-contain"
                 />
               </div>
-              <div className="flex items-center gap-2 mt-4 text-xs font-bold uppercase tracking-widest text-slate-300">
+              {/* <div className="flex items-center gap-2 mt-4 text-xs font-bold uppercase tracking-widest text-slate-300">
                 <QrCode className="w-4 h-4 text-amber-400" />
                 <span>Instant Mobile Camera Scan</span>
-              </div>
+              </div> */}
             </div>
           </motion.div>
         </div>
 
         {/* Footer info */}
         <div className="z-10 text-center text-xs md:text-sm text-slate-400 font-medium">
-          Organized by <strong className="text-white">Microsoft Learn Student Ambassadors MIET</strong> · Powered by TechArena Realtime Engine
+          Organized by <strong className="text-white">Microsoft Learn Student Ambassadors MIET</strong> · Powered by TechArena
         </div>
       </div>
     );
@@ -470,11 +462,11 @@ export default function ProjectorView() {
         >
           <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-400 text-xs md:text-sm font-bold uppercase tracking-[0.25em] mb-2 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
             <Trophy className="w-4 h-4 text-amber-400" />
-            <span>Official Stage Standings</span>
+            <span>{isTeamMode ? 'Team' : 'Solo'}</span>{/*we add here is which is round and question of this round results*/}
           </div>
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-rose-300 to-indigo-300 drop-shadow-[0_0_40px_rgba(245,158,11,0.4)]">
-            {isTeamMode ? 'SQUAD GRAND RANKINGS' : 'SOLO ARENA STANDINGS'}
+            {isTeamMode ? 'SQUAD GRAND RANKINGS' : 'SOLO STANDINGS'}
           </h1>
         </motion.div>
 
@@ -503,7 +495,7 @@ export default function ProjectorView() {
                 cardStyle = 'border-amber-400/80 bg-gradient-to-r from-amber-950/60 via-slate-900/90 to-amber-950/50 text-white shadow-[0_0_45px_rgba(245,158,11,0.35)] scale-[1.02] ring-2 ring-amber-400/40';
                 badgeColor = 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-[0_0_20px_rgba(245,158,11,0.6)]';
                 rankText = '1ST';
-                medalIcon = '👑';
+                medalIcon = '🥇';
               } else if (isSecond) {
                 cardStyle = 'border-slate-300/60 bg-gradient-to-r from-slate-800/80 via-slate-900/90 to-slate-800/60 text-white shadow-[0_0_30px_rgba(203,213,225,0.2)]';
                 badgeColor = 'bg-slate-300 text-slate-950 border-white font-bold shadow-[0_0_15px_rgba(203,213,225,0.5)]';
@@ -539,7 +531,7 @@ export default function ProjectorView() {
                     <GlassAvatar 
                       name={leader.name} 
                       seed={leader.id || leader.teamCode || leader.name} 
-                      size="lg" 
+                      size="md" 
                     />
 
                     {/* Participant / Squad Name */}
@@ -571,9 +563,9 @@ export default function ProjectorView() {
         </div>
 
         {/* Footer */}
-        <div className="z-10 text-center text-xs md:text-sm text-slate-400 font-medium">
+       {/* <div className="z-10 text-center text-xs md:text-sm text-slate-400 font-medium">
           Samarambh 4.0 · Live Stage Leaderboard
-        </div>
+        </div>*/}
       </div>
     );
   }
@@ -603,8 +595,6 @@ export default function ProjectorView() {
       );
     }
 
-    const isTeamMode = gameState?.gameMode === 'team';
-
     // Extract challenge contents across formats
     const questionText = qData.question || payload.question || payload.prompt || payload.missionText || payload.puzzleText || "Check your device for the active challenge!";
     const optionsList = qData.options || payload.options || [];
@@ -623,20 +613,7 @@ export default function ProjectorView() {
         {/* Top Header Bar */}
         <header className="flex justify-between items-center border-b border-white/15 pb-6 mb-6 z-10 pl-24 md:pl-0">
           <div className="flex items-center gap-3">
-            <span className="w-3.5 h-3.5 rounded-full bg-rose-500 animate-ping" />
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-extrabold uppercase tracking-wider text-rose-400">
-                  LIVE CHALLENGE
-                </span>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 uppercase font-semibold">
-                  {isTeamMode ? 'Squad Battle' : 'Solo Arena'}
-                </span>
-              </div>
-              <span className="text-xs text-slate-400 font-medium">
-                Samarambh 4.0 Auditorium Stage
-              </span>
-            </div>
+           {/* <span className="w-3.5 h-3.5 rounded-full bg-rose-500 animate-ping" />*/}
           </div>
 
           {/* Submissions ticker & Timer */}
@@ -648,7 +625,7 @@ export default function ProjectorView() {
               </div>
             )}
 
-            {setupCountdown === 0 ? (
+            {setupCountdown === 0 && (
               <div className={`px-6 py-2.5 rounded-2xl border-2 text-2xl md:text-3xl font-black font-mono tracking-wider uppercase transition-all flex items-center gap-2.5 ${
                 isTimeCritical 
                   ? 'border-rose-500 text-rose-400 bg-rose-950/60 animate-bounce shadow-[0_0_30px_rgba(244,63,94,0.5)]' 
@@ -658,11 +635,6 @@ export default function ProjectorView() {
               }`}>
                 <Clock className="w-6 h-6" />
                 <span>{questionTimer}s</span>
-              </div>
-            ) : (
-              <div className="px-6 py-2.5 rounded-2xl border-2 border-amber-400 text-amber-300 bg-amber-950/40 text-xl md:text-2xl font-black uppercase animate-pulse shadow-[0_0_25px_rgba(245,158,11,0.3)] flex items-center gap-2">
-                <Zap className="w-5 h-5 text-amber-400" />
-                <span>Deploying: {setupCountdown}s</span>
               </div>
             )}
           </div>
@@ -674,7 +646,7 @@ export default function ProjectorView() {
             /* CINEMA-GRADE INCOMING TRANSMISSION COUNTDOWN */
             <StageCountdown
               seconds={setupCountdown}
-              maxSeconds={5}
+              maxSeconds={10}
               mode="projector"
               badgeText="Incoming Arena Challenge"
               title="Incoming Arena Challenge"
@@ -793,9 +765,10 @@ export default function ProjectorView() {
                   {/* Huge Question Text Card */}
                   <div className="w-full bg-slate-900/80 backdrop-blur-2xl border-2 border-indigo-500/40 p-8 md:p-12 rounded-3xl shadow-2xl text-center">
                     <span className="inline-block text-xs uppercase font-extrabold tracking-widest text-indigo-400 px-3 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/30 mb-3">
-                      Arena Question
+                      <HelpCircle className="w-3.5 h-3.5 inline-block mr-1" /> 
+                      <span>Challenge Live Now</span>
                     </span>
-                    <h1 className="text-3xl sm:text-4xl md:text-6xl font-black text-white leading-tight">
+                    <h1 className="text-3xl sm:text-4xl md:text-6xl  text-white leading-tight">
                       {questionText}
                     </h1>
                   </div>
@@ -827,23 +800,23 @@ export default function ProjectorView() {
         </main>
 
         {/* Footer Bar */}
-        <footer className="mt-auto text-center border-t border-white/15 pt-5 z-10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs md:text-sm text-slate-300 font-semibold uppercase tracking-wider">
-          <div className="flex items-center gap-2">
+        <footer className="mt-auto text-center border-t border-white/15 pt-5 z-10  items-center justify-between gap-3 text-xs md:text-sm text-slate-300 font-semibold uppercase tracking-wider">
+          {/*<div className="flex items-center gap-2">
             <Flame className="w-4 h-4 text-amber-400" />
             <span>Samarambh 4.0 Live Session</span>
-          </div>
+          </div>*/}
 
           <p className="font-bold">
             {setupCountdown > 0 
               ? 'Get ready to lock your answers...' 
               : questionTimer === 0 
-                ? 'Time Expired! Host tabulating results...' 
-                : 'Answering window open! Submit on mobile!'}
+                ? 'Time Expired! Host Push The Results...' 
+                : 'Answering window open! Submit on Your Device!'}
           </p>
 
-          <div className="text-slate-400 text-xs font-mono">
+          {/*<div className="text-slate-400 text-xs font-mono">
             Press [F] Fullscreen
-          </div>
+          </div>*/}
         </footer>
 
       </div>

@@ -95,7 +95,7 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
   }, [questionId, player.pin, setParentSubmitted]);
 
   // Synchronized Timers with drift protection
-  const [setupCountdown, setSetupCountdown] = useState(5);
+  const [setupCountdown, setSetupCountdown] = useState(10);
   const [questionTimer, setQuestionTimer] = useState(totalTimeLimit);
 
   useEffect(() => {
@@ -104,14 +104,14 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
 
     const updateTimers = () => {
       const elapsedSeconds = Math.max(0, Math.floor((Date.now() - updatedAtMs) / 1000));
-      const remainingSetup = Math.min(5, Math.max(0, 5 - elapsedSeconds));
+      const remainingSetup = Math.min(10, Math.max(0, 10 - elapsedSeconds));
       
       if (remainingSetup > 0) {
         setSetupCountdown(remainingSetup);
         setQuestionTimer(totalTimeLimit);
       } else {
         setSetupCountdown(0);
-        const activeElapsed = elapsedSeconds - 5;
+        const activeElapsed = elapsedSeconds - 10;
         const remainingQuestionTime = Math.max(0, totalTimeLimit - activeElapsed);
         setQuestionTimer(remainingQuestionTime);
       }
@@ -241,7 +241,7 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
     return (
       <StageCountdown
         seconds={setupCountdown}
-        maxSeconds={5}
+        maxSeconds={10}
         mode="mobile"
         isDarkMode={isDarkMode}
         onToggleTheme={toggleTheme}

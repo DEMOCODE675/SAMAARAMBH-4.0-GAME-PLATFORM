@@ -38,7 +38,7 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
   const payload = gameState?.activeQuestion?.payload || {};
   const totalTimeLimit = gameState?.activeQuestion?.timeLimit || 25;
 
-  const [setupCountdown, setSetupCountdown] = useState(5);
+  const [setupCountdown, setSetupCountdown] = useState(10);
   const [questionTimer, setQuestionTimer] = useState(totalTimeLimit);
 
   useEffect(() => {
@@ -47,14 +47,14 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
 
     const updateTimers = () => {
       const elapsedSeconds = Math.max(0, Math.floor((Date.now() - updatedAtMs) / 1000));
-      const remainingSetup = Math.min(5, Math.max(0, 5 - elapsedSeconds));
+      const remainingSetup = Math.min(10, Math.max(0, 10 - elapsedSeconds));
       
       if (remainingSetup > 0) {
         setSetupCountdown(remainingSetup);
         setQuestionTimer(totalTimeLimit);
       } else {
         setSetupCountdown(0);
-        const activeElapsed = elapsedSeconds - 5;
+        const activeElapsed = elapsedSeconds - 10;
         const remainingQuestionTime = Math.max(0, totalTimeLimit - activeElapsed);
         setQuestionTimer(remainingQuestionTime);
       }
@@ -174,7 +174,7 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
     return (
       <StageCountdown
         seconds={setupCountdown}
-        maxSeconds={5}
+        maxSeconds={10}
         mode="mobile"
         isDarkMode={isDarkMode}
         onToggleTheme={toggleTheme}
