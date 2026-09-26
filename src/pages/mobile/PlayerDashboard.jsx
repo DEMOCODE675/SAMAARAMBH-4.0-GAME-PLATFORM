@@ -143,18 +143,6 @@ export default function PlayerDashboard({ onOpenTeam }) {
     }
   };
 
-  // Concise status badge
-  const getGameStatus = () => {
-    if (gameState?.status === 'playing') {
-      return { text: 'Round Live', bg: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' };
-    }
-    if (gameState?.status === 'leaderboard') {
-      return { text: 'Standings', bg: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' };
-    }
-    return { text: 'Ready', bg: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800' };
-  };
-
-  const status = getGameStatus();
   const topThreePlayers = allPlayers.slice(0, 3);
   const topThreeTeams = allTeams.slice(0, 3);
 
@@ -302,21 +290,13 @@ export default function PlayerDashboard({ onOpenTeam }) {
                     {player?.name || 'Player'}
                   </h1>
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                    Solo
+                    {player?.teamCode ? 'Squad' : 'Solo'}
                   </span>
                 </div>
                 <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                   {player?.teamCode ? `Squad: ${myTeamRank.teamName}` : 'Not in a Squad'}
                 </p>
               </div>
-            </div>
-
-            {/* Quick Summary Pill on Mobile */}
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${status.bg}`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                <span>{status.text}</span>
-              </span>
             </div>
           </div>
 
@@ -480,21 +460,15 @@ export default function PlayerDashboard({ onOpenTeam }) {
                     const isMe = p.pin === player?.pin;
                     const podiumStyles = [
                       {
-                        medal: '🥇 1st Place',
                         ring: isDarkMode ? 'border-amber-500/40 bg-amber-500/5' : 'border-amber-300 bg-amber-50/70',
-                        badge: isDarkMode ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-800 border-amber-200',
                         rankText: 'text-amber-500'
                       },
                       {
-                        medal: '🥈 2nd Place',
                         ring: isDarkMode ? 'border-slate-500/40 bg-slate-500/5' : 'border-slate-300 bg-slate-100/70',
-                        badge: isDarkMode ? 'bg-slate-500/20 text-slate-300 border-slate-500/30' : 'bg-slate-200 text-slate-800 border-slate-300',
                         rankText: isDarkMode ? 'text-slate-300' : 'text-slate-600'
                       },
                       {
-                        medal: '🥉 3rd Place',
                         ring: isDarkMode ? 'border-orange-500/40 bg-orange-500/5' : 'border-orange-200 bg-orange-50/70',
-                        badge: isDarkMode ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' : 'bg-orange-100 text-orange-800 border-orange-200',
                         rankText: 'text-orange-500'
                       }
                     ][idx];
@@ -510,10 +484,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                           isMe ? (isDarkMode ? 'ring-2 ring-indigo-400' : 'ring-2 ring-indigo-500 shadow-md') : 'shadow-sm'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${podiumStyles.badge}`}>
-                            {podiumStyles.medal}
-                          </span>
+                        <div className="flex items-center justify-end mb-2">
                           <span className={`text-xl font-black ${podiumStyles.rankText}`}>
                             #{idx + 1}
                           </span>
@@ -697,21 +668,15 @@ export default function PlayerDashboard({ onOpenTeam }) {
                     const isMyTeam = t.teamCode === player?.teamCode || t.id === player?.teamCode;
                     const podiumStyles = [
                       {
-                        medal: '🥇 1st Squad',
                         ring: isDarkMode ? 'border-amber-500/40 bg-amber-500/5' : 'border-amber-300 bg-amber-50/70',
-                        badge: isDarkMode ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-100 text-amber-800 border-amber-200',
                         rankText: 'text-amber-500'
                       },
                       {
-                        medal: '🥈 2nd Squad',
                         ring: isDarkMode ? 'border-slate-500/40 bg-slate-500/5' : 'border-slate-300 bg-slate-100/70',
-                        badge: isDarkMode ? 'bg-slate-500/20 text-slate-300 border-slate-500/30' : 'bg-slate-200 text-slate-800 border-slate-300',
                         rankText: isDarkMode ? 'text-slate-300' : 'text-slate-600'
                       },
                       {
-                        medal: '🥉 3rd Squad',
                         ring: isDarkMode ? 'border-orange-500/40 bg-orange-500/5' : 'border-orange-200 bg-orange-50/70',
-                        badge: isDarkMode ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' : 'bg-orange-100 text-orange-800 border-orange-200',
                         rankText: 'text-orange-500'
                       }
                     ][idx];
@@ -727,10 +692,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                           isMyTeam ? (isDarkMode ? 'ring-2 ring-emerald-400' : 'ring-2 ring-emerald-500 shadow-md') : 'shadow-sm'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${podiumStyles.badge}`}>
-                            {podiumStyles.medal}
-                          </span>
+                        <div className="flex items-center justify-end mb-2">
                           <span className={`text-xl font-black ${podiumStyles.rankText}`}>
                             #{idx + 1}
                           </span>
