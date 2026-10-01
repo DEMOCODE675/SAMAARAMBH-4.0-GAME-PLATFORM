@@ -425,7 +425,7 @@ export default function QuizUI({ payload, setHasSubmitted: setParentSubmitted })
       </header>
 
       {/* QUESTION BODY */}
-      <main className="max-w-md w-full mx-auto px-4 py-5 flex-1 flex flex-col justify-between">
+      <main className="max-w-md w-full mx-auto px-4 pt-4 pb-28 flex-1 flex flex-col justify-between">
         <div className="space-y-4">
           
           {/* Question Card */}
@@ -498,15 +498,21 @@ export default function QuizUI({ payload, setHasSubmitted: setParentSubmitted })
             })}
           </div>
         </div>
+      </main>
 
-        {/* BOTTOM SUBMISSION ACTION */}
-        <div className="pt-5 pb-3">
+      {/* PERSISTENT STICKY BOTTOM SUBMIT BAR */}
+      <div className={`sticky bottom-0 z-30 p-3 md:p-4 border-t backdrop-blur-md transition-colors ${
+        isDarkMode 
+          ? 'bg-[#0b0f19]/95 border-slate-800 shadow-[0_-8px_20px_rgba(0,0,0,0.5)]' 
+          : 'bg-white/95 border-slate-200/90 shadow-[0_-8px_20px_rgba(0,0,0,0.06)]'
+      } pb-[max(0.85rem,env(safe-area-inset-bottom))]`}>
+        <div className="max-w-md mx-auto">
           <button 
             onClick={handleLockAnswer}
             disabled={!selected || isSubmitting || questionTimer <= 0}
             className={`w-full py-3.5 px-4 rounded-xl font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2 shadow-sm ${
               selected && questionTimer > 0 && !isSubmitting
-                ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/25 active:scale-95 cursor-pointer'
+                ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/25 active:scale-95 cursor-pointer ring-2 ring-indigo-400/40'
                 : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-transparent'
             }`}
           >
@@ -525,7 +531,7 @@ export default function QuizUI({ payload, setHasSubmitted: setParentSubmitted })
             )}
           </button>
         </div>
-      </main>
+      </div>
 
     </div>
   );
