@@ -440,25 +440,38 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
               </div>
 
               <div className={`grid ${images.length > 1 ? 'grid-cols-2 gap-2' : 'grid-cols-1'} overflow-hidden rounded-xl`}>
-                {images.map((imgUrl, index) => (
-                  <button 
-                    key={index} 
-                    type="button"
-                    onClick={() => setActiveImageZoom(imgUrl)}
-                    className="relative group h-40 w-full bg-slate-950/20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-all cursor-zoom-in"
-                  >
-                    <img 
-                      src={imgUrl} 
-                      alt={`Artifact ${index + 1}`} 
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="p-1.5 rounded-lg bg-white/90 dark:bg-slate-900/90 text-slate-800 dark:text-white shadow-sm">
-                        <Maximize2 className="w-4 h-4" />
+                {images.map((imgUrl, index) => {
+                  const letter = String.fromCharCode(65 + index);
+                  return (
+                    <button 
+                      key={index} 
+                      type="button"
+                      onClick={() => setActiveImageZoom({ url: imgUrl, letter, label: `Image ${letter}` })}
+                      className="relative group h-40 w-full bg-slate-950/20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-all cursor-zoom-in"
+                    >
+                      {/* Visual Image A / B Badge */}
+                      <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-950/85 border border-white/20 backdrop-blur-sm shadow-md">
+                        <span className="w-4 h-4 rounded-md bg-indigo-600 text-white font-black text-[10px] flex items-center justify-center">
+                          {letter}
+                        </span>
+                        <span className="text-white text-[10px] font-bold tracking-wider">
+                          Image {letter}
+                        </span>
                       </div>
-                    </div>
-                  </button>
-                ))}
+
+                      <img 
+                        src={imgUrl} 
+                        alt={`Artifact ${letter}`} 
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="p-1.5 rounded-lg bg-white/90 dark:bg-slate-900/90 text-slate-800 dark:text-white shadow-sm">
+                          <Maximize2 className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -568,32 +581,51 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
       </main>
 
       {/* FULLSCREEN IMAGE ZOOM MODAL */}
-      {activeImageZoom && (
-        <div 
-          onClick={() => setActiveImageZoom(null)} 
-          className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 cursor-zoom-out"
-        >
-          <div className="absolute top-4 right-4 flex items-center gap-2">
-            <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white/10 text-white border border-white/20">
-              Tap anywhere to close
-            </span>
-            <button
-              onClick={() => setActiveImageZoom(null)}
-              className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30"
-            >
-              <X className="w-5 h-5" />
-            </button>
+      {activeImageZoom && (() => {
+        const zoomUrl = typeof activeImageZoom === 'string' ? activeImageZoom : activeImageZoom?.url;
+        const zoomLetter = typeof activeImageZoom === 'object' ? activeImageZoom?.letter : null;
+        const zoomLabel = typeof activeImageZoom === 'object' ? activeImageZoom?.label : 'Artifact';
+
+        return (
+          <div 
+            onClick={() => setActiveImageZoom(null)} 
+            className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 cursor-zoom-out"
+          >
+            {/* Top Left: Prominent Image Letter Badge */}
+            <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+              {zoomLetter && (
+                <span className="w-7 h-7 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-lg">
+                  {zoomLetter}
+                </span>
+              )}
+              <span className="text-white font-bold text-sm bg-slate-900/80 px-3 py-1 rounded-xl backdrop-blur-md border border-white/20">
+                {zoomLabel}
+              </span>
+            </div>
+
+            {/* Top Right: Close Controls */}
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white/10 text-white border border-white/20 hidden sm:inline-block">
+                Tap anywhere to close
+              </span>
+              <button
+                onClick={() => setActiveImageZoom(null)}
+                className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="max-w-4xl max-h-[85vh] w-full flex items-center justify-center p-2">
+              <img 
+                src={zoomUrl} 
+                alt={`Enlarged ${zoomLabel}`} 
+                className="max-h-[80vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/10" 
+              />
+            </div>
           </div>
-          
-          <div className="max-w-4xl max-h-[85vh] w-full flex items-center justify-center p-2">
-            <img 
-              src={activeImageZoom} 
-              alt="Enlarged Artifact" 
-              className="max-h-[80vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/10" 
-            />
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
     </div>
   );

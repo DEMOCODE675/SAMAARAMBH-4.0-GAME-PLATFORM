@@ -683,15 +683,27 @@ export default function ProjectorView() {
 
                   {imagesList.length > 0 && (
                     <div className={`grid ${imagesList.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-6 w-full max-w-5xl`}>
-                      {imagesList.map((img, i) => (
-                        <div key={i} className="h-64 md:h-80 bg-black/60 rounded-3xl overflow-hidden border-2 border-white/20 p-2 shadow-2xl">
-                          <img 
-                            src={img} 
-                            alt={`Artifact ${i + 1}`} 
-                            className="w-full h-full object-contain rounded-2xl" 
-                          />
-                        </div>
-                      ))}
+                      {imagesList.map((img, i) => {
+                        const letter = String.fromCharCode(65 + i);
+                        return (
+                          <div key={i} className="relative h-64 md:h-80 bg-black/60 rounded-3xl overflow-hidden border-2 border-white/20 p-2 shadow-2xl">
+                            {/* Prominent Image A / B Badge */}
+                            <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/85 border border-white/20 backdrop-blur-md shadow-xl">
+                              <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-md">
+                                {letter}
+                              </span>
+                              <span className="text-white text-xs font-bold uppercase tracking-wider">
+                                Image {letter}
+                              </span>
+                            </div>
+                            <img 
+                              src={img} 
+                              alt={`Artifact ${letter}`} 
+                              className="w-full h-full object-contain rounded-2xl" 
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
