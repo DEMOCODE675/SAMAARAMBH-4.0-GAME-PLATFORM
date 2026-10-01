@@ -41,7 +41,7 @@ export default function StageCountdown({
               cx="50%"
               cy="50%"
               r="44%"
-              className="stroke-white/10 fill-slate-950/70"
+              className={isDarkMode ? "stroke-white/10 fill-slate-950/70" : "stroke-slate-200 fill-white/95"}
               strokeWidth="8"
             />
             <motion.circle
@@ -66,7 +66,7 @@ export default function StageCountdown({
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.7, opacity: 0, y: 10 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
-                className="text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-amber-400 to-orange-500 font-mono tracking-tight drop-shadow-[0_0_40px_rgba(245,158,11,0.6)]"
+                className="text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-300 via-amber-500 to-orange-600 font-mono tracking-tight drop-shadow-[0_0_40px_rgba(245,158,11,0.6)]"
               >
                 {seconds}
               </motion.span>
@@ -74,15 +74,19 @@ export default function StageCountdown({
           </div>
         </div>
 
-        <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-white tracking-wider uppercase mb-3 drop-shadow-md">
+        <h2 className={`text-3xl md:text-5xl lg:text-6xl font-black tracking-wider uppercase mb-3 drop-shadow-md ${
+          isDarkMode ? 'text-white' : 'text-slate-900'
+        }`}>
           {title}
         </h2>
 
         {/* Tactical status readout */}
-        <div className="mt-8 flex items-center justify-center gap-6 text-xs md:text-sm font-mono text-slate-400 border-t border-white/10 pt-4">
+        <div className={`mt-8 flex items-center justify-center gap-6 text-xs md:text-sm font-mono border-t pt-4 ${
+          isDarkMode ? 'text-slate-400 border-white/10' : 'text-slate-600 border-slate-300/80'
+        }`}>
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-indigo-400" />
-            <span>SPEED WINDOW: <strong className="text-white">{timeWindow}s</strong></span>
+            <Clock className={`w-4 h-4 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
+            <span>SPEED WINDOW: <strong className={isDarkMode ? 'text-white' : 'text-slate-900'}>{timeWindow}s</strong></span>
           </div>
         </div>
       </motion.div>
