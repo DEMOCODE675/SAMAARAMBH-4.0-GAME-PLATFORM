@@ -451,9 +451,6 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
                     >
                       {/* Visual Image A / B Badge */}
                       <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-950/85 border border-white/20 backdrop-blur-sm shadow-md">
-                        <span className="w-4 h-4 rounded-md bg-indigo-600 text-white font-black text-[10px] flex items-center justify-center">
-                          {letter}
-                        </span>
                         <span className="text-white text-[10px] font-bold tracking-wider">
                           Image {letter}
                         </span>
