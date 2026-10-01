@@ -127,7 +127,7 @@ export default function PlayerRoundReview({ player, gameState }) {
             const data = docSnap.data();
             submissions.push({
               id: docSnap.id,
-              questionText: `🎨 Skribbl Round ${data.roundIndex || ''}: Word Drawing`,
+              questionText: `Skribbl Round ${data.roundIndex || ''}: Word Drawing`,
               submittedAnswer: data.text,
               answer: data.text,
               isCorrect: Boolean(data.isCorrect),

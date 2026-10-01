@@ -6,11 +6,8 @@ import { db } from '../../config/firebase';
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import PlayerRoundReview from './components/PlayerRoundReview';
 import { 
-  Trophy, 
   Users, 
   User, 
-  Zap, 
-  Shield, 
   Copy, 
   Check, 
   Search, 
@@ -142,9 +139,6 @@ export default function PlayerDashboard({ onOpenTeam }) {
       myPlayerRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
-
-  const topThreePlayers = allPlayers.slice(0, 3);
-  const topThreeTeams = allTeams.slice(0, 3);
 
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
@@ -289,13 +283,13 @@ export default function PlayerDashboard({ onOpenTeam }) {
                   <h1 className="text-xl md:text-2xl font-bold tracking-tight">
                     {player?.name || 'Player'}
                   </h1>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                 { /*<span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
                     {player?.teamCode ? 'Squad' : 'Solo'}
-                  </span>
+                  </span> */}
                 </div>
-                <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+               { /*p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                   {player?.teamCode ? `Squad: ${myTeamRank.teamName}` : 'Not in a Squad'}
-                </p>
+                </p> */}
               </div>
             </div>
           </div>
@@ -311,7 +305,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
             }`}>
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Solo Rank</span>
-                <Trophy className="w-4 h-4 text-amber-500" />
+                { /*<Trophy className="w-4 h-4 text-amber-500" /> */}
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl md:text-3xl font-extrabold tracking-tight">
@@ -331,7 +325,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
             }`}>
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Score</span>
-                <Zap className="w-4 h-4 text-emerald-500" />
+                
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">
@@ -349,7 +343,9 @@ export default function PlayerDashboard({ onOpenTeam }) {
             }`}>
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Squad Rank</span>
-                <Shield className="w-4 h-4 text-indigo-500" />
+                {
+                  
+                }
               </div>
               {player?.teamCode ? (
                 <div className="flex items-baseline gap-1">
@@ -452,84 +448,6 @@ export default function PlayerDashboard({ onOpenTeam }) {
           {/* ================= TAB 1: SOLO PLAYERS ================= */}
           {activeTab === 'solo' && (
             <div className="space-y-4">
-              
-              {/* TOP 3 PODIUM CARDS (No PIN shown anywhere!) */}
-              {!searchQuery && topThreePlayers.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {topThreePlayers.map((p, idx) => {
-                    const isMe = p.pin === player?.pin;
-                    const podiumStyles = [
-                      {
-                        ring: isDarkMode ? 'border-amber-500/40 bg-amber-500/5' : 'border-amber-300 bg-amber-50/70',
-                        rankText: 'text-amber-500'
-                      },
-                      {
-                        ring: isDarkMode ? 'border-slate-500/40 bg-slate-500/5' : 'border-slate-300 bg-slate-100/70',
-                        rankText: isDarkMode ? 'text-slate-300' : 'text-slate-600'
-                      },
-                      {
-                        ring: isDarkMode ? 'border-orange-500/40 bg-orange-500/5' : 'border-orange-200 bg-orange-50/70',
-                        rankText: 'text-orange-500'
-                      }
-                    ][idx];
-
-                    return (
-                      <motion.div 
-                        layout
-                        key={p.id || p.pin}
-                        transition={{
-                          layout: { type: "spring", stiffness: 350, damping: 28 }
-                        }}
-                        className={`rounded-2xl border p-4 flex flex-col justify-between transition-all ${podiumStyles.ring} ${
-                          isMe ? (isDarkMode ? 'ring-2 ring-indigo-400' : 'ring-2 ring-indigo-500 shadow-md') : 'shadow-sm'
-                        }`}
-                      >
-                        <div className="flex items-center justify-end mb-2">
-                          <span className={`text-xl font-black ${podiumStyles.rankText}`}>
-                            #{idx + 1}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <GlassAvatar 
-                            name={p.name} 
-                            seed={p.pin || p.id} 
-                            size="md" 
-                          />
-                          <div className="min-w-0">
-                            <h4 className="text-sm font-bold truncate flex items-center gap-1.5">
-                              {p.name}
-                              {isMe && (
-                                <span className="text-[10px] bg-indigo-600 text-white font-semibold px-1.5 py-0.2 rounded">
-                                  You
-                                </span>
-                              )}
-                            </h4>
-                            {(() => {
-                              const sName = p.teamName || allTeams.find(t => t.teamCode === p.teamCode || t.id === p.teamCode)?.teamName;
-                              return (
-                                <p className={`text-xs truncate ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                                  {p.teamCode ? (sName ? `Squad: ${sName}` : 'Squad Member') : 'Solo'}
-                                </p>
-                              );
-                            })()}
-                          </div>
-                        </div>
-
-                        <div className={`mt-3 pt-2.5 border-t flex items-center justify-between ${
-                          isDarkMode ? 'border-slate-800/80' : 'border-slate-200/80'
-                        }`}>
-                          <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Score</span>
-                          <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
-                            {p.score || 0} <span className="text-xs font-normal">pts</span>
-                          </span>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              )}
-
               {/* CLEAN LEADERBOARD TABLE (Strictly hides secret login PINs) */}
               <div className={`rounded-2xl border overflow-hidden transition-all ${
                 isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200/80 shadow-sm'
@@ -602,7 +520,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                                   </span>
                                 )}
                               </div>
-                              {(() => {
+                             {/* {(() => {
                                 const sName = p.teamName || allTeams.find(t => t.teamCode === p.teamCode || t.id === p.teamCode)?.teamName;
                                 return (
                                   <span className={`text-[11px] truncate block ${
@@ -611,7 +529,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                                     {p.teamCode ? (sName ? `Squad: ${sName}` : 'Squad Member') : 'Solo Player'}
                                   </span>
                                 );
-                              })()}
+                              })()} */}
                             </div>
                           </div>
 
@@ -658,78 +576,6 @@ export default function PlayerDashboard({ onOpenTeam }) {
                   >
                     Create / Join Squad
                   </button>
-                </div>
-              )}
-
-              {/* Squad Podium */}
-              {!searchQuery && topThreeTeams.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {topThreeTeams.map((t, idx) => {
-                    const isMyTeam = t.teamCode === player?.teamCode || t.id === player?.teamCode;
-                    const podiumStyles = [
-                      {
-                        ring: isDarkMode ? 'border-amber-500/40 bg-amber-500/5' : 'border-amber-300 bg-amber-50/70',
-                        rankText: 'text-amber-500'
-                      },
-                      {
-                        ring: isDarkMode ? 'border-slate-500/40 bg-slate-500/5' : 'border-slate-300 bg-slate-100/70',
-                        rankText: isDarkMode ? 'text-slate-300' : 'text-slate-600'
-                      },
-                      {
-                        ring: isDarkMode ? 'border-orange-500/40 bg-orange-500/5' : 'border-orange-200 bg-orange-50/70',
-                        rankText: 'text-orange-500'
-                      }
-                    ][idx];
-
-                    return (
-                      <motion.div 
-                        layout
-                        key={t.id || t.teamCode}
-                        transition={{
-                          layout: { type: "spring", stiffness: 350, damping: 28 }
-                        }}
-                        className={`rounded-2xl border p-4 flex flex-col justify-between transition-all ${podiumStyles.ring} ${
-                          isMyTeam ? (isDarkMode ? 'ring-2 ring-emerald-400' : 'ring-2 ring-emerald-500 shadow-md') : 'shadow-sm'
-                        }`}
-                      >
-                        <div className="flex items-center justify-end mb-2">
-                          <span className={`text-xl font-black ${podiumStyles.rankText}`}>
-                            #{idx + 1}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <GlassAvatar 
-                            name={t.teamName} 
-                            seed={t.teamCode || t.id} 
-                            size="md" 
-                          />
-                          <div className="min-w-0">
-                            <h4 className="text-sm font-bold truncate flex items-center gap-1.5">
-                              {t.teamName}
-                              {isMyTeam && (
-                                <span className="text-[10px] bg-emerald-600 text-white font-semibold px-1.5 py-0.2 rounded">
-                                  Your Squad
-                                </span>
-                              )}
-                            </h4>
-                            <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                              {isMyTeam ? 'Your Active Squad' : 'Registered Squad'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className={`mt-3 pt-2.5 border-t flex items-center justify-between ${
-                          isDarkMode ? 'border-slate-800/80' : 'border-slate-200/80'
-                        }`}>
-                          <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Combined Score</span>
-                          <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
-                            {t.totalScore || 0} <span className="text-xs font-normal">pts</span>
-                          </span>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
                 </div>
               )}
 
