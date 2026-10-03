@@ -151,7 +151,7 @@ export default function ProjectorView() {
   const [submissionCount, setSubmissionCount] = useState(0);
 
   // Synchronized Timers
-  const [setupCountdown, setSetupCountdown] = useState(10); 
+  const [setupCountdown, setSetupCountdown] = useState(5); 
   const [questionTimer, setQuestionTimer] = useState(0);
 
   // Luminous Stage Theme (defaults to light mode as preferred, persistent in localStorage)
@@ -264,14 +264,14 @@ export default function ProjectorView() {
     const updateTimers = () => {
       const nowMs = Date.now();
       const elapsedSeconds = Math.max(0, Math.floor((nowMs - updatedAtMs) / 1000));
-      const remainingSetup = Math.min(10, Math.max(0, 10 - elapsedSeconds));
+      const remainingSetup = Math.min(5, Math.max(0, 5 - elapsedSeconds));
 
       if (remainingSetup > 0) {
         setSetupCountdown(remainingSetup);
         setQuestionTimer(questionDuration); 
       } else {
         setSetupCountdown(0);
-        const activeElapsed = elapsedSeconds - 10;
+        const activeElapsed = elapsedSeconds - 5;
         const remainingQuestionTime = Math.max(0, questionDuration - activeElapsed);
         setQuestionTimer(remainingQuestionTime);
       }
@@ -857,11 +857,11 @@ export default function ProjectorView() {
         {/* Central Display Area - auto-contained within remaining screen height */}
         <main className="flex-1 min-h-0 flex flex-col items-center justify-center z-10 w-full max-w-7xl mx-auto overflow-hidden my-auto">
           {setupCountdown > 0 ? (
-            /* 10-Second Countdown Before Question Is Revealed */
+            /* 5-Second Countdown Before Question Is Revealed */
             <StageCountdown
               seconds={setupCountdown}
               secondsRemaining={setupCountdown}
-              maxSeconds={10}
+              maxSeconds={5}
               mode="projector"
               isDarkMode={!isLightMode}
               roundName={qData.round || (gameState.round ? `Round ${gameState.round}` : "Samarambh 4.0")}

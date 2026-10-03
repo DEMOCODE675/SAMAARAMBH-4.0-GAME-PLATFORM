@@ -9,7 +9,7 @@ import { Sun, Moon, Clock, Sparkles } from 'lucide-react';
 export default function StageCountdown({
   seconds,
   secondsRemaining,
-  maxSeconds = 10,
+  maxSeconds = 5,
   mode,
   isProjector = false,
   isDarkMode = true,
@@ -23,7 +23,7 @@ export default function StageCountdown({
   roundName,
   questionNumber
 }) {
-  const currentSeconds = seconds !== undefined ? seconds : (secondsRemaining !== undefined ? secondsRemaining : 10);
+  const currentSeconds = seconds !== undefined ? seconds : (secondsRemaining !== undefined ? secondsRemaining : 5);
   const currentMode = mode || (isProjector ? 'projector' : 'mobile');
   const currentTitle = title || (roundName ? `${roundName} • Question ${questionNumber || 1}` : 'Incoming Arena Challenge');
   const progressRatio = Math.max(0, Math.min(1, currentSeconds / maxSeconds));

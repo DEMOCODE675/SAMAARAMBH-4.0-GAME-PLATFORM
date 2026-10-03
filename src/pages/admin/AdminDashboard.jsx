@@ -26,7 +26,8 @@ import {
   Sliders, 
   Sparkles,
   Palette,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Unlock
 } from 'lucide-react';
 import SkribblControl from './components/SkribblControl';
 import { buildWordHint, hashWord } from '../../utils/skribblEngine';
@@ -96,31 +97,80 @@ export default function AdminDashboard() {
   const [liveState, setLiveState] = useState(null);
   const [activeRoundTab, setActiveRoundTab] = useState('Round 1');
 
-  const fetchBlocks = async () => {
+  const fetchBlocks = async (resetUsed = false) => {
     setIsFetching(true);
     try {
+      if (resetUsed) {
+        setStatusMsg('Unfreezing questions & preparing arena...');
+        const questionsSnap = await getDocs(collection(db, 'content', 'samarambh', 'questions'));
+        const batch = writeBatch(db);
+        let resetCount = 0;
+        questionsSnap.forEach((docSnap) => {
+          if (docSnap.data().isUsed) {
+            batch.update(doc(db, 'content', 'samarambh', 'questions', docSnap.id), { isUsed: false });
+            resetCount++;
+          }
+        });
+        if (resetCount > 0) {
+          await batch.commit();
+        }
+
+        // Also ensure events/samarambh is in clean standby and not stuck
+        await setDoc(doc(db, 'events', 'samarambh'), {
+          status: 'waiting',
+          gameMode: broadcastMode || 'solo',
+          activeQuestion: null,
+          skribbl: null,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        setStatusMsg('✅ All questions unfreezed & ready to push again!');
+        setTimeout(() => setStatusMsg(''), 3000);
+      }
+
       const querySnapshot = await getDocs(collection(db, 'content', 'samarambh', 'questions'));
       const blocks = [];
-      querySnapshot.forEach((document) => blocks.push({ id: document.id, ...document.data() }));
+      querySnapshot.forEach((document) => {
+        const data = document.data();
+        blocks.push({ 
+          id: document.id, 
+          ...data,
+          isUsed: resetUsed ? false : Boolean(data.isUsed)
+        });
+      });
       setSavedBlocks(blocks);
     } catch (err) {
       console.error(err);
-      setStatusMsg('❌ Failed to load blocks.');
+      setStatusMsg('❌ Failed to load/reset blocks.');
     } finally {
       setIsFetching(false);
     }
   };
 
   useEffect(() => {
-    fetchBlocks();
+    fetchBlocks(false);
 
-    // Listen to real-time status of the event
-    const unsubscribe = onSnapshot(doc(db, 'events', 'samarambh'), (docSnap) => {
+    // Listen to real-time status of the event (with auto-recovery if deleted)
+    const unsubscribe = onSnapshot(doc(db, 'events', 'samarambh'), async (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setLiveState(data);
         if (data.gameMode) {
           setBroadcastMode(data.gameMode);
+        }
+      } else {
+        // When events/samarambh is deleted or missing, immediately unfreeze to clean standby!
+        const standbyState = {
+          status: 'waiting',
+          gameMode: 'solo',
+          activeQuestion: null,
+          skribbl: null
+        };
+        setLiveState(standbyState);
+        try {
+          await setDoc(doc(db, 'events', 'samarambh'), standbyState);
+        } catch (e) {
+          console.warn("Could not re-initialize events/samarambh:", e);
         }
       }
     });
@@ -209,9 +259,10 @@ export default function AdminDashboard() {
       // Calculate question sequence within this round
       const roundBlocks = savedBlocks.filter(b => b.round === block.round);
       const sortedRoundBlocks = [...roundBlocks].sort((a, b) => {
-        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds || 0);
-        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds || 0);
-        return timeA - timeB;
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+        if (timeA !== timeB) return timeA - timeB;
+        return (a.id || '').localeCompare(b.id || '');
       });
       const qIndex = sortedRoundBlocks.findIndex(b => b.id === block.id);
       const questionNumber = qIndex >= 0 ? qIndex + 1 : 1;
@@ -428,7 +479,14 @@ export default function AdminDashboard() {
     }
   };
 
-  const filteredBlocks = savedBlocks.filter(b => b.round === activeRoundTab);
+  const filteredBlocks = savedBlocks
+    .filter(b => b.round === activeRoundTab)
+    .sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+      if (timeA !== timeB) return timeA - timeB;
+      return (a.id || '').localeCompare(b.id || '');
+    });
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-6 md:p-10 selection:bg-rose-500/30">
@@ -834,9 +892,14 @@ export default function AdminDashboard() {
             {liveState?.status === 'playing' && (
               <div className="bg-rose-950/50 border border-rose-500/50 p-6 rounded-3xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 shadow-xl shadow-rose-950/40">
                 <div>
-                  <h2 className="text-rose-400 font-extrabold tracking-widest uppercase text-sm mb-1 flex items-center gap-2">
+                  <h2 className="text-rose-400 font-extrabold tracking-widest uppercase text-sm mb-1 flex items-center gap-2 flex-wrap">
                     <span className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping" />
-                    Game is currently LIVE
+                    <span>Game is currently LIVE</span>
+                    {liveState?.activeQuestion?.round && (
+                      <span className="text-xs font-mono font-bold px-2.5 py-0.5 bg-rose-900/80 border border-rose-500/50 rounded-md text-white">
+                        {liveState.activeQuestion.round} • Q{liveState.activeQuestion.questionNumber || 1}
+                      </span>
+                    )}
                   </h2>
                   <p className="text-slate-200 text-xs">Students are submitting answers right now.</p>
                 </div>
@@ -883,8 +946,7 @@ export default function AdminDashboard() {
                 </button>
                 <button 
                   onClick={() => handleProjectorOverride('waiting', 'solo')} 
-                  disabled={liveState?.status === 'playing'} 
-                  className="bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-300 disabled:opacity-40 font-bold py-3 px-4 rounded-xl text-xs transition-colors"
+                  className="bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-300 font-bold py-3 px-4 rounded-xl text-xs transition-colors active:scale-95"
                 >
                   🔄 Reset to Standby
                 </button>
@@ -924,9 +986,12 @@ export default function AdminDashboard() {
 
               {/* ROUND TABS & REFRESH */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 pb-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <Layers className="w-4 h-4 text-cyan-400" />
                   <h2 className="text-base font-bold text-white">Content Arsenal</h2>
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-900 text-cyan-400 border border-slate-700/80">
+                    {filteredBlocks.length} {filteredBlocks.length === 1 ? 'Challenge' : 'Challenges'}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -944,11 +1009,20 @@ export default function AdminDashboard() {
                     </button>
                   ))}
                   <button 
-                    onClick={fetchBlocks} 
-                    className="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-slate-300 border border-slate-700 flex items-center gap-1.5 transition-colors"
+                    onClick={() => fetchBlocks(true)} 
+                    title="Refresh and unfreeze all questions to ready state"
+                    className="text-xs bg-slate-800 hover:bg-slate-700 px-3.5 py-1.5 rounded-lg text-slate-300 border border-slate-700 flex items-center gap-1.5 transition-colors font-medium active:scale-95"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" />
+                    <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-cyan-400' : ''}`} />
                     <span>Refresh</span>
+                  </button>
+                  <button 
+                    onClick={() => fetchBlocks(true)} 
+                    title="Unfreeze all questions so they can be pushed again"
+                    className="text-xs bg-cyan-600/30 hover:bg-cyan-600/50 px-3.5 py-1.5 rounded-lg text-cyan-300 border border-cyan-500/40 flex items-center gap-1.5 transition-colors font-bold shadow-sm active:scale-95"
+                  >
+                    <Unlock className="w-3.5 h-3.5" />
+                    <span>Unfreeze All</span>
                   </button>
                 </div>
               </div>
@@ -963,7 +1037,7 @@ export default function AdminDashboard() {
                 <p className="text-slate-500 text-center py-12 text-xs">No challenges built for {activeRoundTab} yet.</p>
               ) : (
                 <div className="space-y-3">
-                  {filteredBlocks.map((block) => {
+                  {filteredBlocks.map((block, index) => {
                     const isLive = liveState?.status === 'playing' && liveState?.activeQuestion?.id === block.id;
                     const isUsed = block.isUsed;
                     const textLabel = block.type === 'skribbl'
@@ -983,6 +1057,15 @@ export default function AdminDashboard() {
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {isLive && <div className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping shrink-0" />}
+                          <span className={`text-xs font-mono font-black px-2.5 py-1 rounded-lg border shrink-0 shadow-sm ${
+                            isLive 
+                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' 
+                              : isUsed 
+                              ? 'bg-slate-900 text-slate-500 border-slate-800' 
+                              : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+                          }`}>
+                            Q{index + 1}
+                          </span>
                           <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md uppercase tracking-wider shrink-0 border ${
                             block.type === 'skribbl'
                               ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
@@ -1010,18 +1093,18 @@ export default function AdminDashboard() {
 
                         <button 
                           onClick={() => handlePushToGlobal(block)}
-                          disabled={liveState?.status === 'playing' || isUsed}
+                          disabled={liveState?.status === 'playing' && !isLive}
                           className={`font-bold px-5 py-2.5 rounded-xl uppercase text-xs tracking-wider transition-all shrink-0 ${
                             isLive 
                               ? 'bg-rose-600 text-white cursor-not-allowed opacity-90' 
                               : isUsed 
-                              ? 'bg-slate-900 text-slate-600 border border-slate-800 cursor-not-allowed' 
+                              ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 active:scale-95' 
                               : liveState?.status === 'playing' 
                               ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
                               : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-sm active:scale-95'
                           }`}
                         >
-                          {isLive ? 'Currently Live' : isUsed ? '🔒 Sent / Used' : 'Push to Screens'}
+                          {isLive ? 'Currently Live' : isUsed ? '🔁 Re-Push' : 'Push to Screens'}
                         </button>
                       </div>
                     );
