@@ -13,122 +13,102 @@ import {
   Terminal, 
   HelpCircle, 
   CheckCircle2, 
-  Image as ImageIcon,
-  Sun,
-  Moon
+  Image as ImageIcon
 } from 'lucide-react';
 import StageCountdown from '../../components/StageCountdown';
 import GlassAvatar from '../../components/GlassAvatar';
 import SkribblStage from './components/SkribblStage';
 
 // Option badge designs with high-contrast big-screen presence
-const getMcqBadges = (isLightMode) => [
+const MCQ_BADGES = [
   { 
     label: 'A', 
-    border: isLightMode ? 'border-rose-300 hover:border-rose-400' : 'border-rose-500/70', 
-    bg: isLightMode ? 'bg-white/95 text-slate-900 shadow-[0_12px_32px_rgba(244,63,94,0.10)]' : 'bg-rose-950/50', 
-    badgeBg: isLightMode ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/35' : 'bg-rose-600 text-white shadow-rose-600/50', 
-    text: isLightMode ? 'text-slate-900 font-black' : 'text-rose-100',
-    glow: isLightMode ? 'shadow-lg ring-1 ring-rose-200/60' : 'shadow-[0_0_35px_rgba(244,63,94,0.25)]'
+    border: 'border-rose-500/70', 
+    bg: 'bg-rose-950/50', 
+    badgeBg: 'bg-rose-600 text-white shadow-rose-600/50', 
+    text: 'text-rose-100',
+    glow: 'shadow-[0_0_35px_rgba(244,63,94,0.25)]'
   },
   { 
     label: 'B', 
-    border: isLightMode ? 'border-blue-300 hover:border-blue-400' : 'border-blue-500/70', 
-    bg: isLightMode ? 'bg-white/95 text-slate-900 shadow-[0_12px_32px_rgba(59,130,246,0.10)]' : 'bg-blue-950/50', 
-    badgeBg: isLightMode ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/35' : 'bg-blue-600 text-white shadow-blue-600/50', 
-    text: isLightMode ? 'text-slate-900 font-black' : 'text-blue-100',
-    glow: isLightMode ? 'shadow-lg ring-1 ring-blue-200/60' : 'shadow-[0_0_35px_rgba(59,130,246,0.25)]'
+    border: 'border-blue-500/70', 
+    bg: 'bg-blue-950/50', 
+    badgeBg: 'bg-blue-600 text-white shadow-blue-600/50', 
+    text: 'text-blue-100',
+    glow: 'shadow-[0_0_35px_rgba(59,130,246,0.25)]'
   },
   { 
     label: 'C', 
-    border: isLightMode ? 'border-amber-300 hover:border-amber-400' : 'border-amber-500/70', 
-    bg: isLightMode ? 'bg-white/95 text-slate-900 shadow-[0_12px_32px_rgba(245,158,11,0.10)]' : 'bg-amber-950/50', 
-    badgeBg: isLightMode ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/35' : 'bg-amber-600 text-white shadow-amber-600/50', 
-    text: isLightMode ? 'text-slate-900 font-black' : 'text-amber-100',
-    glow: isLightMode ? 'shadow-lg ring-1 ring-amber-200/60' : 'shadow-[0_0_35px_rgba(245,158,11,0.25)]'
+    border: 'border-amber-500/70', 
+    bg: 'bg-amber-950/50', 
+    badgeBg: 'bg-amber-600 text-white shadow-amber-600/50', 
+    text: 'text-amber-100',
+    glow: 'shadow-[0_0_35px_rgba(245,158,11,0.25)]'
   },
   { 
     label: 'D', 
-    border: isLightMode ? 'border-emerald-300 hover:border-emerald-400' : 'border-emerald-500/70', 
-    bg: isLightMode ? 'bg-white/95 text-slate-900 shadow-[0_12px_32px_rgba(16,185,129,0.10)]' : 'bg-emerald-950/50', 
-    badgeBg: isLightMode ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/35' : 'bg-emerald-600 text-white shadow-emerald-600/50', 
-    text: isLightMode ? 'text-slate-900 font-black' : 'text-emerald-100',
-    glow: isLightMode ? 'shadow-lg ring-1 ring-emerald-200/60' : 'shadow-[0_0_35px_rgba(16,185,129,0.25)]'
+    border: 'border-emerald-500/70', 
+    bg: 'bg-emerald-950/50', 
+    badgeBg: 'bg-emerald-600 text-white shadow-emerald-600/50', 
+    text: 'text-emerald-100',
+    glow: 'shadow-[0_0_35px_rgba(16,185,129,0.25)]'
   }
 ];
 
 // Top-Left Brand Logo Badge (declared outside to avoid React re-creation in render)
-function TopLeftLogoBadge({ isLightMode }) {
+function TopLeftLogoBadge() {
   return (
-    <div className="absolute top-3 left-3 md:top-4 md:left-5 z-40 select-none">
+    <div className="absolute top-6 left-6 z-40 select-none">
       <img 
         src="/images/logo.jpg" 
         onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
         alt="MLSA MIET Organizer" 
-        className={`w-8 h-8 md:w-10 md:h-10 object-contain rounded-xl p-1 transition-all ${
-          isLightMode 
-            ? 'bg-white/90 border border-slate-300 shadow-md' 
-            : 'bg-white/10 border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.2)]'
-        }`}
+        className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-xl p-1 bg-white/10 border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.2)]" 
       />
     </div>
   );
 }
 
 // Projector Photo Card with pure React state error handling
-function ProjectorImageCard({ img, isSingleImage, letter, badgeClass, isLightMode }) {
+function ProjectorImageCard({ img, isSingleImage, letter, badgeClass }) {
   const [hasError, setHasError] = useState(false);
 
   return (
-    <div className={`relative h-full max-h-[48vh] rounded-2xl overflow-hidden border-2 p-2 shadow-xl flex flex-col transition-all ${
-      isLightMode 
-        ? 'bg-white border-slate-200/90 shadow-[0_10px_25px_rgba(0,0,0,0.06)]' 
-        : 'bg-slate-900/90 border-white/20'
-    }`}>
-      {/* Prominent Badge: Single image displays "Visual Artifact", multiple display "Image A/B/C/D" */}
-      <div className={`absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg border backdrop-blur-md shadow-md ${
-        isLightMode 
-          ? 'bg-white/95 border-slate-200 text-slate-900' 
-          : 'bg-slate-950/85 border-white/20 text-white'
-      }`}>
+    <div className={`relative ${isSingleImage ? 'h-72 md:h-96' : 'h-64 md:h-80'} bg-black/60 rounded-3xl overflow-hidden border-2 border-white/20 p-2 shadow-2xl flex flex-col`}>
+      {/* Prominent Image A / B or Visual Artifact Badge */}
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/85 border border-white/20 backdrop-blur-md shadow-xl">
         {isSingleImage ? (
           <>
-            <span className="w-5 h-5 rounded-md font-black text-[11px] flex items-center justify-center text-white shadow-sm bg-gradient-to-br from-indigo-500 to-indigo-600">
-              <ImageIcon className="w-3 h-3" />
+            <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-md">
+              <ImageIcon className="w-3.5 h-3.5" />
             </span>
-            <span className={`text-[11px] font-black uppercase tracking-wider ${
-              isLightMode ? 'text-slate-800' : 'text-white'
-            }`}>
+            <span className="text-white text-xs font-bold uppercase tracking-wider">
               Visual Artifact
             </span>
           </>
         ) : (
           <>
-            <span className={`w-5 h-5 rounded-md font-black text-[11px] flex items-center justify-center text-white shadow-sm ${badgeClass}`}>
+            <span className={`w-6 h-6 rounded-lg ${badgeClass} text-white font-black text-xs flex items-center justify-center shadow-md`}>
               {letter}
             </span>
-            <span className={`text-[11px] font-black uppercase tracking-wider ${
-              isLightMode ? 'text-slate-800' : 'text-white'
-            }`}>
+            <span className="text-white text-xs font-bold uppercase tracking-wider">
               Image {letter}
             </span>
           </>
         )}
       </div>
 
-      <div className={`w-full h-full rounded-xl overflow-hidden flex items-center justify-center p-1.5 ${
-        isLightMode ? 'bg-slate-50' : 'bg-black/60'
-      }`}>
+      <div className="w-full h-full rounded-2xl overflow-hidden flex items-center justify-center p-2 bg-black/40">
         {hasError ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-4 text-center">
-            <ImageIcon className="w-8 h-8 text-slate-500 mb-2" />
-            <span className="text-xs font-semibold">Image Preview Unavailable</span>
+            <ImageIcon className="w-10 h-10 text-slate-500 mb-2" />
+            <span className="text-sm font-semibold">Image Preview Unavailable</span>
           </div>
         ) : (
           <img 
             src={img} 
             alt={isSingleImage ? 'Visual Artifact' : `Artifact ${letter}`} 
-            className="w-full h-full object-contain rounded-lg" 
+            className="w-full h-full object-contain rounded-xl" 
             onError={() => setHasError(true)}
           />
         )}
@@ -153,21 +133,6 @@ export default function ProjectorView() {
   // Synchronized Timers
   const [setupCountdown, setSetupCountdown] = useState(10); 
   const [questionTimer, setQuestionTimer] = useState(0);
-
-  // Luminous Stage Theme (defaults to light mode for maximum auditorium clarity)
-  const [isLightMode, setIsLightMode] = useState(() => {
-    return localStorage.getItem('techarena_projector_theme') !== 'dark';
-  });
-
-  const toggleTheme = () => {
-    setIsLightMode(prev => {
-      const next = !prev;
-      localStorage.setItem('techarena_projector_theme', next ? 'light' : 'dark');
-      return next;
-    });
-  };
-
-  const mcqBadges = useMemo(() => getMcqBadges(isLightMode), [isLightMode]);
 
   // Video Background Controls: 'auto' | 'firstbag' | 'leaderboard'
   const [videoMode, setVideoMode] = useState('auto');
@@ -212,15 +177,13 @@ export default function ProjectorView() {
     }
   };
 
-  // Keyboard shortcut listener ('F' for fullscreen, 'V' to toggle video mode, 'T' for theme)
+  // Keyboard shortcut listener ('F' for fullscreen, 'V' to toggle video mode)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'f' || e.key === 'F') {
         toggleFullscreen();
       } else if (e.key === 'v' || e.key === 'V') {
         setVideoMode(prev => prev === 'auto' ? 'leaderboard' : prev === 'leaderboard' ? 'firstbag' : 'auto');
-      } else if (e.key === 't' || e.key === 'T') {
-        toggleTheme();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -343,9 +306,7 @@ export default function ProjectorView() {
         loop 
         muted 
         playsInline 
-        className={`w-full h-full object-cover scale-105 filter contrast-110 saturate-125 transition-opacity duration-1000 ${
-          isLightMode ? 'opacity-20 mix-blend-multiply' : 'opacity-45'
-        }`}
+        className="w-full h-full object-cover scale-105 filter contrast-110 saturate-125 transition-opacity duration-1000 opacity-45"
       >
         <source src={currentVideoSrc} type="video/mp4" />
         <source src="/videos/leaderboardsolo.mp4" type="video/mp4" />
@@ -353,18 +314,8 @@ export default function ProjectorView() {
       </video>
 
       {/* Atmospheric Stage Vignettes & Gradient Shimmer */}
-      {isLightMode ? (
-        <>
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-indigo-50/50 to-slate-200/90" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100/40 via-transparent to-slate-200/60" />
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#cbd5e115_1px,transparent_1px),linear-gradient(to_bottom,#cbd5e115_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-        </>
-      ) : (
-        <>
-          <div className="absolute inset-0 bg-gradient-to-t from-[#070b14] via-[#070b14]/85 to-[#070b14]/90" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.12)_0%,transparent_70%)]" />
-        </>
-      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#070b14] via-[#070b14]/85 to-[#070b14]/90" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.12)_0%,transparent_70%)]" />
     </div>
   );
 
@@ -381,15 +332,9 @@ export default function ProjectorView() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className={`flex items-center gap-2 backdrop-blur-xl border p-1.5 rounded-2xl shadow-2xl text-xs transition-colors ${
-              isLightMode 
-                ? 'bg-white/95 border-slate-200 text-slate-700 shadow-slate-300/60' 
-                : 'bg-slate-900/90 border-white/20 text-slate-300'
-            }`}
+            className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-xl border border-white/20 p-1.5 rounded-2xl shadow-2xl text-xs text-slate-300"
           >
-            <div className={`flex items-center gap-1 px-2 font-mono text-[11px] ${
-              isLightMode ? 'text-amber-600 font-bold' : 'text-amber-400'
-            }`}>
+            <div className="flex items-center gap-1 px-2 font-mono text-[11px] text-amber-400">
               <Video className="w-3.5 h-3.5" />
               <span>BG:</span>
             </div>
@@ -399,9 +344,7 @@ export default function ProjectorView() {
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
                 videoMode === 'auto' 
                   ? 'bg-indigo-600 text-white shadow-sm' 
-                  : isLightMode 
-                    ? 'hover:bg-slate-100 text-slate-600' 
-                    : 'hover:bg-white/10 text-slate-400'
+                  : 'hover:bg-white/10 text-slate-400'
               }`}
             >
               Auto
@@ -412,9 +355,7 @@ export default function ProjectorView() {
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
                 videoMode === 'firstbag' 
                   ? 'bg-indigo-600 text-white shadow-sm' 
-                  : isLightMode 
-                    ? 'hover:bg-slate-100 text-slate-600' 
-                    : 'hover:bg-white/10 text-slate-400'
+                  : 'hover:bg-white/10 text-slate-400'
               }`}
               title="/videos/firstbag.mp4"
             >
@@ -426,9 +367,7 @@ export default function ProjectorView() {
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
                 videoMode === 'leaderboard' 
                   ? 'bg-indigo-600 text-white shadow-sm' 
-                  : isLightMode 
-                    ? 'hover:bg-slate-100 text-slate-600' 
-                    : 'hover:bg-white/10 text-slate-400'
+                  : 'hover:bg-white/10 text-slate-400'
               }`}
               title="/videos/leaderboardsolo.mp4"
             >
@@ -438,26 +377,9 @@ export default function ProjectorView() {
         )}
       </AnimatePresence>
 
-      {/* Theme Toggle Button */}
-      <button
-        onClick={toggleTheme}
-        className={`p-3 backdrop-blur-xl border rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center ${
-          isLightMode 
-            ? 'bg-white/95 hover:bg-white border-slate-300 text-indigo-700 shadow-slate-300/60' 
-            : 'bg-slate-900/80 hover:bg-slate-800 border-white/20 text-amber-400'
-        }`}
-        title={`Switch to ${isLightMode ? 'Dark' : 'Light'} Mode (T)`}
-      >
-        {isLightMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-      </button>
-
       <button
         onClick={toggleFullscreen}
-        className={`p-3 backdrop-blur-xl border rounded-2xl shadow-xl transition-all active:scale-95 ${
-          isLightMode 
-            ? 'bg-white/95 hover:bg-white border-slate-300 text-slate-800 shadow-slate-300/60' 
-            : 'bg-slate-900/80 hover:bg-slate-800 border-white/20 text-white'
-        }`}
+        className="p-3 bg-slate-900/80 hover:bg-slate-800 backdrop-blur-xl border border-white/20 text-white rounded-2xl shadow-xl transition-all active:scale-95"
         title="Toggle Fullscreen (F)"
       >
         {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -470,38 +392,28 @@ export default function ProjectorView() {
   // =========================================================================
   if (!gameState || gameState.status === 'waiting' || gameState.status === 'idle' || !gameState.status) {
     return (
-      <div className={`h-screen max-h-screen overflow-hidden flex flex-col items-center justify-between p-4 md:p-6 lg:p-8 select-none relative font-sans transition-colors duration-500 ${
-        isLightMode ? 'bg-slate-100 text-slate-900' : 'bg-[#070b14] text-white'
-      }`}>
-        <TopLeftLogoBadge isLightMode={isLightMode} />
+      <div className="min-h-screen bg-[#070b14] text-white flex flex-col items-center justify-between p-8 md:p-14 select-none overflow-hidden relative font-sans">
+        <TopLeftLogoBadge />
         {renderBackgroundVideo()}
         {renderOperatorBar()}
 
         {/* Top Status Pill */}
-        <div className="z-10 pt-1 flex items-center gap-2 shrink-0">
-          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-semibold tracking-wider transition-all ${
-            isLightMode 
-              ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm' 
-              : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'
-          }`}>
-            <Users className={`w-3.5 h-3.5 ${isLightMode ? 'text-indigo-600' : 'text-indigo-400'}`} />
+        <div className="z-10 pt-2 flex items-center gap-2">
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold tracking-wider">
+            <Users className="w-3.5 h-3.5 text-indigo-400" />
             <span><strong>{playerCount}</strong> Competitors Right Now</span>
           </div>
         </div>
 
         {/* Central Stage Hero */}
-        <div className="z-10 flex flex-col items-center max-w-5xl w-full my-auto text-center flex-1 min-h-0 justify-center">
+        <div className="z-10 flex flex-col items-center max-w-6xl w-full my-auto text-center">
           <motion.div 
             initial={{ y: -30, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
             transition={{ duration: 0.7 }}
-            className="mb-4 md:mb-6 shrink-0"
+            className="mb-6 md:mb-8"
           >
-            <h1 className={`text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-black tracking-tight text-transparent bg-clip-text transition-all ${
-              isLightMode 
-                ? 'bg-gradient-to-r from-slate-900 via-indigo-900 to-indigo-700 drop-shadow-[0_10px_30px_rgba(99,102,241,0.15)]' 
-                : 'bg-gradient-to-r from-white via-indigo-200 to-amber-200 drop-shadow-[0_0_60px_rgba(99,102,241,0.5)]'
-            }`}>
+            <h1 className="text-6xl sm:text-7xl md:text-9xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-amber-200 drop-shadow-[0_0_60px_rgba(99,102,241,0.5)]">
               SAMARAMBH 4.0
             </h1>
           </motion.div>
@@ -511,34 +423,20 @@ export default function ProjectorView() {
             initial={{ scale: 0.94, opacity: 0 }} 
             animate={{ scale: 1, opacity: 1 }} 
             transition={{ duration: 0.6, delay: 0.2 }} 
-            className={`w-full max-w-4xl backdrop-blur-2xl border-2 p-6 md:p-8 lg:p-10 rounded-3xl grid grid-cols-1 md:grid-cols-2 items-center gap-6 md:gap-10 transition-all shrink-0 ${
-              isLightMode 
-                ? 'bg-white/95 border-slate-200/90 shadow-[0_25px_60px_rgba(0,0,0,0.08)]' 
-                : 'bg-slate-900/70 border-indigo-500/40 shadow-[0_0_80px_rgba(99,102,241,0.25)]'
-            }`}
+            className="w-full max-w-4xl bg-slate-900/70 backdrop-blur-2xl border-2 border-indigo-500/40 p-8 md:p-12 rounded-3xl shadow-[0_0_80px_rgba(99,102,241,0.25)] grid grid-cols-1 md:grid-cols-2 items-center gap-8 md:gap-12"
           >
             {/* Left Instructions */}
-            <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-3 md:space-y-4">
-              <span className={`text-xs uppercase font-extrabold tracking-widest px-3 py-1 rounded-md border ${
-                isLightMode 
-                  ? 'text-indigo-700 bg-indigo-50 border-indigo-200' 
-                  : 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30'
-              }`}>
+            <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-4">
+              <span className="text-xs uppercase font-extrabold tracking-widest text-indigo-400 px-3 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/30">
                 Live Registration
               </span>
 
-              <h2 className={`text-2xl sm:text-3xl md:text-4xl font-black tracking-tight ${
-                isLightMode ? 'text-slate-900' : 'text-white'
-              }`}>
+              <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">
                 Scan QR or Visit Link to Join
               </h2>
 
-              <div className="w-full pt-2 md:pt-4">
-                <div className={`p-3 rounded-xl border text-sm sm:text-base md:text-lg lg:text-xl font-bold truncate font-mono shadow-inner transition-all ${
-                  isLightMode 
-                    ? 'bg-slate-50 border-slate-300 text-indigo-950 font-black' 
-                    : 'bg-black/60 border-white/15 text-amber-300'
-                }`}>
+              <div className="w-full pt-5">
+                <div className="p-3.5 rounded-xl bg-black/60 border border-white/15 text-amber-300 font-mono text-sm sm:text-base md:text-lg lg:text-xl font-bold truncate shadow-inner">
                   {eventUrl}
                 </div>
               </div>
@@ -546,15 +444,11 @@ export default function ProjectorView() {
 
             {/* Right QR Code */}
             <div className="flex flex-col items-center justify-center">
-              <div className={`p-4 md:p-5 rounded-3xl border-4 transition-all ${
-                isLightMode 
-                  ? 'bg-white shadow-[0_15px_40px_rgba(0,0,0,0.08)] border-indigo-200' 
-                  : 'bg-white shadow-[0_0_50px_rgba(255,255,255,0.3)] border-indigo-400/50'
-              }`}>
+              <div className="p-5 bg-white rounded-3xl shadow-[0_0_50px_rgba(255,255,255,0.3)] border-4 border-indigo-400/50">
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(eventUrl)}&margin=4`} 
                   alt="Scan to Join Event" 
-                  className="w-40 h-40 md:w-52 md:h-52 object-contain"
+                  className="w-48 h-48 md:w-56 md:h-56 object-contain"
                 />
               </div>
             </div>
@@ -562,10 +456,8 @@ export default function ProjectorView() {
         </div>
 
         {/* Footer info */}
-        <div className={`z-10 text-center text-xs md:text-sm font-medium shrink-0 pt-2 ${
-          isLightMode ? 'text-slate-500' : 'text-slate-400'
-        }`}>
-          Organized by <strong className={isLightMode ? 'text-slate-900' : 'text-white'}>Microsoft Learn Student Ambassadors MIET</strong> · Powered by TechArena
+        <div className="z-10 text-center text-xs md:text-sm text-slate-400 font-medium">
+          Organized by <strong className="text-white">Microsoft Learn Student Ambassadors MIET</strong> · Powered by TechArena
         </div>
       </div>
     );
@@ -592,53 +484,37 @@ export default function ProjectorView() {
     }
 
     return (
-      <div className={`h-screen max-h-screen overflow-hidden flex flex-col items-center justify-between p-4 md:p-6 select-none relative font-sans transition-colors duration-500 ${
-        isLightMode ? 'bg-slate-100 text-slate-900' : 'bg-[#070b14] text-white'
-      }`}>
-        <TopLeftLogoBadge isLightMode={isLightMode} />
+      <div className="min-h-screen bg-[#070b14] text-white flex flex-col items-center justify-between p-8 md:p-12 overflow-hidden relative select-none font-sans">
+        <TopLeftLogoBadge />
         {renderBackgroundVideo()}
         {renderOperatorBar()}
 
-        {/* Header Title */}
+        {/* Header Title with generous top padding to prevent screen clipping */}
         <motion.div 
           initial={{ y: -40, opacity: 0 }} 
           animate={{ y: 0, opacity: 1 }} 
           transition={{ duration: 0.6 }} 
-          className="text-center z-10 pt-2 shrink-0"
+          className="text-center z-10 pt-6 md:pt-8"
         >
-          <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full border text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-1.5 transition-all ${
-            isLightMode 
-              ? 'bg-amber-100/70 border-amber-300 text-amber-900 shadow-sm' 
-              : 'bg-amber-500/15 border-amber-500/40 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)]'
-          }`}>
-            <Trophy className="w-4 h-4 text-amber-500" />
+          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-400 text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-3 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+            <Trophy className="w-4 h-4 text-amber-400" />
             <span>{roundResultLabel}</span>
           </div>
 
-          <h1 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-wider text-transparent bg-clip-text transition-all ${
-            isLightMode 
-              ? 'bg-gradient-to-r from-amber-600 via-rose-600 to-indigo-700 drop-shadow-[0_4px_16px_rgba(245,158,11,0.2)]' 
-              : 'bg-gradient-to-r from-amber-300 via-rose-300 to-indigo-300 drop-shadow-[0_0_40px_rgba(245,158,11,0.4)]'
-          }`}>
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-rose-300 to-indigo-300 drop-shadow-[0_0_40px_rgba(245,158,11,0.4)]">
             {isTeamMode ? 'SQUAD GRAND RANKINGS' : 'SOLO STANDINGS'}
           </h1>
         </motion.div>
 
         {/* Leaderboard Grid */}
-        <div className="w-full max-w-4xl space-y-2 md:space-y-2.5 z-10 my-auto flex-1 min-h-0 flex flex-col justify-center overflow-hidden">
+        <div className="w-full max-w-5xl space-y-3.5 z-10 my-auto">
           {leaders.length === 0 ? (
-            <div className={`text-center py-16 rounded-3xl backdrop-blur-xl border transition-all ${
-              isLightMode 
-                ? 'bg-white/90 border-slate-200 shadow-xl' 
-                : 'bg-slate-900/60 border-white/10'
-            }`}>
-              <Trophy className="w-14 h-14 mx-auto mb-3 text-amber-500 animate-bounce" />
-              <p className={`text-xl font-bold uppercase tracking-widest ${
-                isLightMode ? 'text-slate-800' : 'text-slate-300'
-              }`}>
+            <div className="text-center py-20 bg-slate-900/60 border border-white/10 rounded-3xl backdrop-blur-xl">
+              <Trophy className="w-16 h-16 mx-auto mb-4 text-amber-400 animate-bounce" />
+              <p className="text-2xl text-slate-300 font-bold uppercase tracking-widest">
                 Tabulating Arena Scores...
               </p>
-              <p className="text-sm text-slate-500 mt-1">Connecting to live submission matrix</p>
+              <p className="text-sm text-slate-500 mt-2">Connecting to live submission matrix</p>
             </div>
           ) : (
             leaders.map((leader, index) => {
@@ -646,46 +522,26 @@ export default function ProjectorView() {
               const isSecond = index === 1;
               const isThird = index === 2;
 
-              let cardStyle = isLightMode 
-                ? 'border-slate-200/90 bg-white/90 text-slate-800 shadow-[0_4px_16px_rgba(0,0,0,0.04)]' 
-                : 'border-white/10 bg-slate-900/60 text-slate-300';
-              let badgeColor = isLightMode 
-                ? 'bg-slate-100 text-slate-700 border-slate-300 font-bold' 
-                : 'bg-slate-800 text-slate-300 border-slate-700';
+              let cardStyle = 'border-white/10 bg-slate-900/60 text-slate-300';
+              let badgeColor = 'bg-slate-800 text-slate-300 border-slate-700';
               let rankText = `#0${index + 1}`;
               let medalIcon = null;
-              let scoreColor = isLightMode ? 'text-indigo-600' : 'text-amber-400 drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]';
 
               if (isFirst) {
-                cardStyle = isLightMode
-                  ? 'border-amber-400 bg-gradient-to-r from-amber-50 via-white to-amber-100/60 text-slate-900 shadow-[0_15px_40px_rgba(245,158,11,0.25)] scale-[1.01] ring-2 ring-amber-400/50'
-                  : 'border-amber-400/80 bg-gradient-to-r from-amber-950/60 via-slate-900/90 to-amber-950/50 text-white shadow-[0_0_45px_rgba(245,158,11,0.35)] scale-[1.01] ring-2 ring-amber-400/40';
-                badgeColor = isLightMode
-                  ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-slate-950 border-amber-300 font-black shadow-md'
-                  : 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-[0_0_20px_rgba(245,158,11,0.6)]';
+                cardStyle = 'border-amber-400/80 bg-gradient-to-r from-amber-950/60 via-slate-900/90 to-amber-950/50 text-white shadow-[0_0_45px_rgba(245,158,11,0.35)] scale-[1.02] ring-2 ring-amber-400/40';
+                badgeColor = 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-[0_0_20px_rgba(245,158,11,0.6)]';
                 rankText = '1ST';
                 medalIcon = '🥇';
-                scoreColor = isLightMode ? 'text-amber-600 font-black' : 'text-amber-400 drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]';
               } else if (isSecond) {
-                cardStyle = isLightMode
-                  ? 'border-slate-300 bg-gradient-to-r from-slate-100 via-white to-slate-200/50 text-slate-900 shadow-[0_10px_25px_rgba(0,0,0,0.06)]'
-                  : 'border-slate-300/60 bg-gradient-to-r from-slate-800/80 via-slate-900/90 to-slate-800/60 text-white shadow-[0_0_30px_rgba(203,213,225,0.2)]';
-                badgeColor = isLightMode
-                  ? 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-900 border-slate-300 font-black shadow-sm'
-                  : 'bg-slate-300 text-slate-950 border-white font-bold shadow-[0_0_15px_rgba(203,213,225,0.5)]';
+                cardStyle = 'border-slate-300/60 bg-gradient-to-r from-slate-800/80 via-slate-900/90 to-slate-800/60 text-white shadow-[0_0_30px_rgba(203,213,225,0.2)]';
+                badgeColor = 'bg-slate-300 text-slate-950 border-white font-bold shadow-[0_0_15px_rgba(203,213,225,0.5)]';
                 rankText = '2ND';
                 medalIcon = '🥈';
-                scoreColor = isLightMode ? 'text-slate-700 font-black' : 'text-amber-400 drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]';
               } else if (isThird) {
-                cardStyle = isLightMode
-                  ? 'border-orange-300 bg-gradient-to-r from-orange-50 via-white to-orange-100/50 text-slate-900 shadow-[0_10px_25px_rgba(249,115,22,0.1)]'
-                  : 'border-amber-700/60 bg-gradient-to-r from-amber-950/50 via-slate-900/90 to-amber-950/30 text-white shadow-[0_0_25px_rgba(180,83,9,0.2)]';
-                badgeColor = isLightMode
-                  ? 'bg-gradient-to-br from-amber-600 to-orange-600 text-white border-orange-400 font-black shadow-sm'
-                  : 'bg-amber-700 text-white border-amber-600 font-bold';
+                cardStyle = 'border-amber-700/60 bg-gradient-to-r from-amber-950/50 via-slate-900/90 to-amber-950/30 text-white shadow-[0_0_25px_rgba(180,83,9,0.2)]';
+                badgeColor = 'bg-amber-700 text-white border-amber-600 font-bold';
                 rankText = '3RD';
                 medalIcon = '🥉';
-                scoreColor = isLightMode ? 'text-amber-700 font-black' : 'text-amber-400 drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]';
               }
 
               return (
@@ -698,11 +554,11 @@ export default function ProjectorView() {
                     layout: { type: "spring", stiffness: 350, damping: 28 },
                     duration: 0.35 
                   }} 
-                  className={`flex justify-between items-center px-5 md:px-7 py-2.5 md:py-3 rounded-2xl border-2 backdrop-blur-xl transition-all duration-300 ${cardStyle}`}
+                  className={`flex justify-between items-center px-6 md:px-8 py-4 md:py-5 rounded-2xl border-2 backdrop-blur-xl transition-all duration-300 ${cardStyle}`}
                 >
-                  <div className="flex items-center gap-3 md:gap-5">
+                  <div className="flex items-center gap-4 md:gap-6">
                     {/* Rank Badge */}
-                    <div className={`px-3 py-1 md:px-3.5 md:py-1.5 rounded-xl border text-xs md:text-sm font-mono flex items-center gap-1 shrink-0 ${badgeColor}`}>
+                    <div className={`px-4 py-2 rounded-xl border text-sm md:text-base font-mono flex items-center gap-1.5 shrink-0 ${badgeColor}`}>
                       {medalIcon && <span>{medalIcon}</span>}
                       <span>{rankText}</span>
                     </div>
@@ -711,20 +567,16 @@ export default function ProjectorView() {
                     <GlassAvatar 
                       name={leader.name} 
                       seed={leader.id || leader.teamCode || leader.name} 
-                      size="sm" 
+                      size="md" 
                     />
 
                     {/* Participant / Squad Name */}
                     <div className="flex flex-col">
-                      <span className={`text-xl md:text-2xl font-black tracking-wide ${
-                        isLightMode ? 'text-slate-900' : 'text-white'
-                      }`}>
+                      <span className="text-2xl md:text-3xl font-extrabold tracking-wide text-white">
                         {leader.name}
                       </span>
                       {!isTeamMode && (leader.teamCode || leader.teamName) && (
-                        <span className={`text-xs font-semibold tracking-wider ${
-                          isLightMode ? 'text-indigo-600' : 'text-indigo-300'
-                        }`}>
+                        <span className="text-xs md:text-sm font-semibold text-indigo-300 tracking-wider">
                           Squad: {leader.teamName || (leader.teamCode ? teamsMap[leader.teamCode] : null) || 'Squad Member'}
                         </span>
                       )}
@@ -732,13 +584,11 @@ export default function ProjectorView() {
                   </div>
 
                   {/* Score */}
-                  <div className="flex items-baseline gap-2">
-                    <span className={`text-3xl md:text-4xl font-black tracking-wider font-mono ${scoreColor}`}>
+                  <div className="flex items-baseline gap-2.5">
+                    <span className="text-4xl md:text-5xl font-black tracking-wider text-amber-400 drop-shadow-[0_0_15px_rgba(245,158,11,0.4)] font-mono">
                       {leader.score}
                     </span>
-                    <span className={`text-xs md:text-sm font-bold uppercase tracking-widest ${
-                      isLightMode ? 'text-slate-500' : 'text-slate-400'
-                    }`}>
+                    <span className="text-sm md:text-base font-bold text-slate-400 uppercase tracking-widest">
                       PTS
                     </span>
                   </div>
@@ -757,15 +607,13 @@ export default function ProjectorView() {
   if (gameState?.status === 'playing') {
     const qData = gameState?.activeQuestion || {};
     const payload = qData.payload || {};
-    const qType = qData.type || 'mcq';
+    const qType = qData.type || payload.type || 'mcq';
 
-    // SKRIBBL DRAW & GUESS: takes over the stage with its canvas, hint, and live guess feed
+    // Special Stage UI for Live Multiplayer Skribbl Game
     if (qType === 'skribbl') {
       return (
-        <div className={`h-screen max-h-screen overflow-hidden flex flex-col p-4 md:p-6 relative select-none font-sans transition-colors duration-500 ${
-          isLightMode ? 'bg-slate-100 text-slate-900' : 'bg-[#070b14] text-white'
-        }`}>
-          <TopLeftLogoBadge isLightMode={isLightMode} />
+        <div className="min-h-screen bg-[#070b14] text-white flex flex-col p-6 md:p-10 relative overflow-hidden select-none font-sans">
+          <TopLeftLogoBadge />
           {renderBackgroundVideo()}
           {renderOperatorBar()}
           <SkribblStage
@@ -781,6 +629,8 @@ export default function ProjectorView() {
     // Extract challenge contents across formats
     const questionText = qData.question || payload.question || payload.prompt || payload.missionText || payload.puzzleText || "Check your device for the active challenge!";
     const optionsList = qData.options || payload.options || [];
+    
+    // Robust image parsing for 1, 2, 3, or 4 images
     const rawImages = (Array.isArray(payload.images) && payload.images.length > 0)
       ? payload.images
       : (typeof payload.images === 'string' && payload.images.trim()
@@ -788,117 +638,80 @@ export default function ProjectorView() {
           : (payload.imageUrl ? (typeof payload.imageUrl === 'string' ? payload.imageUrl.split(',') : [payload.imageUrl]) : []));
     const imagesList = rawImages.map(u => (typeof u === 'string' ? u.trim() : '')).filter(Boolean);
     const isSingleImage = imagesList.length === 1;
+
     const consoleText = payload.consoleText || "";
 
     const isTimeCritical = questionTimer <= 5;
     const isTimeWarning = questionTimer <= 10 && questionTimer > 5;
 
     return (
-      <div className={`h-screen max-h-screen overflow-hidden flex flex-col justify-between p-3 md:p-4 lg:p-5 relative select-none font-sans transition-colors duration-500 ${
-        isLightMode ? 'bg-slate-100 text-slate-900' : 'bg-[#070b14] text-white'
-      }`}>
-        <TopLeftLogoBadge isLightMode={isLightMode} />
+      <div className="min-h-screen bg-[#070b14] text-white flex flex-col justify-between p-8 md:p-12 relative overflow-hidden select-none font-sans">
+        <TopLeftLogoBadge />
         {renderBackgroundVideo()}
         {renderOperatorBar()}
 
         {/* Top Header Bar */}
-        <header className={`shrink-0 flex justify-between items-center border-b pb-2 mb-2 z-10 pl-16 md:pl-20 ${
-          isLightMode ? 'border-slate-300/80' : 'border-white/15'
-        }`}>
+        <header className="flex justify-between items-center border-b border-white/15 pb-6 mb-6 z-10 pl-24 md:pl-0">
           <div className="flex items-center gap-3">
           </div>
 
           {/* Submissions ticker & Timer */}
-          <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-4">
             {setupCountdown === 0 && submissionCount > 0 && (
-              <div className={`hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs md:text-sm font-bold font-mono transition-all ${
-                isLightMode 
-                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800 shadow-sm' 
-                  : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-              }`}>
-                <CheckCircle2 className={`w-3.5 h-3.5 md:w-4 md:h-4 ${isLightMode ? 'text-emerald-600' : 'text-emerald-400'}`} />
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm font-bold font-mono shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 <span>{submissionCount} Submissions Locked</span>
               </div>
             )}
 
             {setupCountdown === 0 && (
-              <div className={`px-4 py-1.5 md:px-5 md:py-2 rounded-2xl border-2 text-xl md:text-2xl font-black font-mono tracking-wider uppercase transition-all flex items-center gap-2 ${
+              <div className={`px-6 py-2.5 rounded-2xl border-2 text-2xl md:text-3xl font-black font-mono tracking-wider uppercase transition-all flex items-center gap-2.5 ${
                 isTimeCritical 
-                  ? (isLightMode 
-                      ? 'border-rose-500 text-rose-700 bg-rose-50 animate-bounce shadow-lg shadow-rose-200' 
-                      : 'border-rose-500 text-rose-400 bg-rose-950/60 animate-bounce shadow-[0_0_30px_rgba(244,63,94,0.5)]')
+                  ? 'border-rose-500 text-rose-400 bg-rose-950/60 animate-bounce shadow-[0_0_30px_rgba(244,63,94,0.5)]' 
                   : isTimeWarning
-                    ? (isLightMode 
-                        ? 'border-amber-400 text-amber-800 bg-amber-50 shadow-md' 
-                        : 'border-amber-400 text-amber-300 bg-amber-950/40 shadow-[0_0_20px_rgba(245,158,11,0.3)]')
-                    : (isLightMode 
-                        ? 'border-indigo-300 text-indigo-900 bg-white/95 shadow-md' 
-                        : 'border-indigo-400 text-indigo-300 bg-indigo-950/40 shadow-[0_0_20px_rgba(99,102,241,0.3)]')
+                    ? 'border-amber-400 text-amber-300 bg-amber-950/40 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
+                    : 'border-indigo-500/50 text-indigo-300 bg-indigo-950/40 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
               }`}>
-                <Clock className="w-5 h-5" />
+                <Clock className="w-6 h-6" />
                 <span>{questionTimer}s</span>
               </div>
             )}
           </div>
         </header>
 
-        {/* Central Display Area - auto-contained within remaining screen height */}
-        <main className="flex-1 min-h-0 flex flex-col items-center justify-center z-10 w-full max-w-7xl mx-auto overflow-hidden my-auto">
+        {/* Question & Interactive Body View */}
+        <main className="flex-1 flex flex-col justify-center items-center z-10 w-full max-w-6xl mx-auto my-auto py-4">
           {setupCountdown > 0 ? (
-            /* CINEMA-GRADE INCOMING TRANSMISSION COUNTDOWN */
+            /* 10-Second Countdown Before Question Is Revealed */
             <StageCountdown
-              seconds={setupCountdown}
-              maxSeconds={10}
-              mode="projector"
-              isDarkMode={!isLightMode}
-              badgeText="Incoming Arena Challenge"
-              title="Incoming Arena Challenge"
-              subtitle="Contestants, look at your mobile controllers! Fast responses receive maximum speed bonuses."
-              timeWindow={qData.timeLimit || 20}
-              brandName="Samarambh 4.0"
+              secondsRemaining={setupCountdown}
+              roundName={qData.round || (gameState.round ? `Round ${gameState.round}` : "Samarambh 4.0")}
+              questionNumber={qData.questionNumber || qData.roundIndex || 1}
+              totalQuestions={gameState.totalQuestions || 10}
+              isProjector={true}
             />
           ) : (
-            /* ACTIVE QUESTION CONTENT BASED ON CHALLENGE TYPE */
-            <div className="w-full h-full flex flex-col justify-center items-center overflow-hidden">
-              {/* 1. VISUAL INSPECTION / PHOTO RECOGNIZE */}
+            /* Active Live Challenge Presentation */
+            <div className="w-full flex flex-col items-center">
               {qType === 'photo_recognize' ? (
+                /* 1. VISUAL IDENTIFICATION CHALLENGE (1, 2, 3, or 4 images) */
                 <motion.div 
-                  initial={{ scale: 0.98, opacity: 0 }} 
+                  initial={{ scale: 0.96, opacity: 0 }} 
                   animate={{ scale: 1, opacity: 1 }} 
-                  className="w-full h-full flex flex-col justify-between items-center gap-2 md:gap-3 overflow-hidden py-1"
+                  className="w-full flex flex-col items-center space-y-6"
                 >
-                  {/* Question Header Card - Compact, Crisp, High Contrast */}
-                  <div className={`w-full shrink-0 backdrop-blur-2xl border-2 px-5 py-2 md:py-2.5 rounded-2xl text-center shadow-lg transition-all ${
-                    isLightMode 
-                      ? 'bg-white/95 border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.06)]' 
-                      : 'bg-slate-900/80 border-indigo-500/40'
-                  }`}>
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full border text-[11px] font-bold uppercase tracking-wider mb-1 ${
-                      isLightMode 
-                        ? 'bg-cyan-50 border-cyan-300 text-cyan-800' 
-                        : 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300'
-                    }`}>
-                      <ImageIcon className="w-3 h-3" />
-                      <span>Visual Evidence Inspection</span>
+                  <div className="w-full bg-slate-900/80 backdrop-blur-2xl border-2 border-indigo-500/40 p-6 md:p-8 rounded-3xl shadow-2xl text-center">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      <span>Visual Identification Challenge</span>
                     </div>
-                    <h1 className={`text-xl md:text-2xl lg:text-3xl font-black leading-tight truncate ${
-                      isLightMode ? 'text-slate-900' : 'text-white'
-                    }`}>
+                    <h1 className="text-3xl md:text-5xl font-extrabold text-white leading-tight">
                       {questionText}
                     </h1>
                   </div>
 
-                  {/* Images Display Grid - Dynamically fills remaining height */}
                   {imagesList.length > 0 && (
-                    <div className={`w-full flex-1 min-h-0 grid gap-3 md:gap-4 items-center justify-center ${
-                      isSingleImage 
-                        ? 'grid-cols-1 max-w-3xl lg:max-w-4xl mx-auto' 
-                        : imagesList.length === 2 
-                          ? 'grid-cols-2 max-w-5xl mx-auto' 
-                          : imagesList.length === 3 
-                            ? 'grid-cols-3 max-w-6xl mx-auto' 
-                            : 'grid-cols-2 md:grid-cols-4 w-full'
-                    }`}>
+                    <div className={`grid ${isSingleImage ? 'grid-cols-1 max-w-3xl' : 'grid-cols-2 max-w-5xl'} gap-6 w-full mx-auto`}>
                       {imagesList.map((img, i) => {
                         const letter = String.fromCharCode(65 + i);
                         const isA = i === 0;
@@ -913,33 +726,22 @@ export default function ProjectorView() {
                             isSingleImage={isSingleImage} 
                             letter={letter} 
                             badgeClass={badgeClass} 
-                            isLightMode={isLightMode} 
                           />
                         );
                       })}
                     </div>
                   )}
 
-                  {/* Options Display Row */}
                   {optionsList.length > 0 && (
-                    <div className={`w-full shrink-0 grid gap-2.5 md:gap-3 ${
-                      optionsList.length <= 2 
-                        ? 'grid-cols-2 max-w-3xl mx-auto' 
-                        : optionsList.length === 3 
-                          ? 'grid-cols-3 max-w-5xl mx-auto' 
-                          : 'grid-cols-2 md:grid-cols-4'
-                    }`}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
                       {optionsList.map((opt, idx) => {
-                        const b = mcqBadges[idx % mcqBadges.length];
+                        const b = MCQ_BADGES[idx % MCQ_BADGES.length];
                         return (
-                          <div 
-                            key={idx} 
-                            className={`px-4 py-2.5 md:py-3 rounded-2xl border-2 backdrop-blur-xl flex items-center transition-all ${b.border} ${b.bg} ${b.glow}`}
-                          >
-                            <span className={`w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-base md:text-lg font-black mr-3 shrink-0 shadow-sm ${b.badgeBg}`}>
+                          <div key={idx} className={`p-5 md:p-6 rounded-2xl border-2 backdrop-blur-xl flex items-center ${b.border} ${b.bg} ${b.glow}`}>
+                            <span className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-xl md:text-2xl font-black mr-5 shrink-0 ${b.badgeBg}`}>
                               {b.label}
                             </span>
-                            <span className={`text-base md:text-xl font-extrabold truncate ${b.text}`}>{opt}</span>
+                            <span className={`text-xl md:text-3xl font-bold ${b.text}`}>{opt}</span>
                           </div>
                         );
                       })}
@@ -949,33 +751,23 @@ export default function ProjectorView() {
               ) : qType === 'terminal_hack' ? (
                 /* 2. TERMINAL SHELL CHALLENGE */
                 <motion.div 
-                  initial={{ scale: 0.98, opacity: 0 }} 
+                  initial={{ scale: 0.96, opacity: 0 }} 
                   animate={{ scale: 1, opacity: 1 }} 
-                  className="w-full h-full flex flex-col justify-between items-center gap-3 overflow-hidden py-1"
+                  className="w-full flex flex-col items-center space-y-6"
                 >
-                  <div className={`w-full shrink-0 backdrop-blur-2xl border-2 px-6 py-3 rounded-2xl shadow-xl text-center transition-all ${
-                    isLightMode 
-                      ? 'bg-white/95 border-amber-300/80 shadow-[0_10px_30px_rgba(0,0,0,0.06)]' 
-                      : 'bg-slate-900/80 border-amber-500/40'
-                  }`}>
-                    <div className={`inline-flex items-center gap-2 px-3 py-0.5 rounded-full border text-xs font-bold uppercase tracking-wider mb-1 ${
-                      isLightMode 
-                        ? 'bg-amber-100/80 border-amber-300 text-amber-900' 
-                        : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
-                    }`}>
+                  <div className="w-full bg-slate-900/80 backdrop-blur-2xl border-2 border-amber-500/40 p-6 md:p-8 rounded-3xl shadow-2xl text-center">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold uppercase tracking-wider mb-2">
                       <Terminal className="w-3.5 h-3.5" />
                       <span>Security Incident Command Mission</span>
                     </div>
-                    <h1 className={`text-xl md:text-3xl font-extrabold leading-relaxed font-mono ${
-                      isLightMode ? 'text-amber-950 font-black' : 'text-amber-300'
-                    }`}>
+                    <h1 className="text-2xl md:text-4xl font-extrabold text-amber-300 leading-relaxed font-mono">
                       {questionText}
                     </h1>
                   </div>
 
                   {consoleText && (
-                    <div className="w-full max-w-5xl flex-1 min-h-0 rounded-2xl border-2 border-slate-700 bg-[#0c1220]/95 backdrop-blur-2xl shadow-2xl overflow-hidden flex flex-col text-left font-mono">
-                      <div className="bg-slate-800/80 px-4 py-2 border-b border-slate-700 flex items-center justify-between shrink-0">
+                    <div className="w-full max-w-5xl rounded-3xl border-2 border-slate-700 bg-[#0c1220]/95 backdrop-blur-2xl shadow-2xl overflow-hidden text-left font-mono">
+                      <div className="bg-slate-800/80 px-5 py-3 border-b border-slate-700 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="w-3 h-3 rounded-full bg-rose-500/80" />
                           <span className="w-3 h-3 rounded-full bg-amber-500/80" />
@@ -983,7 +775,7 @@ export default function ProjectorView() {
                         </div>
                         <span className="text-xs text-slate-400">root@arena-node:~# bash</span>
                       </div>
-                      <pre className="p-4 md:p-6 text-lg md:text-2xl text-emerald-400 overflow-y-auto flex-1 whitespace-pre-wrap leading-relaxed">
+                      <pre className="p-6 md:p-8 text-xl md:text-3xl text-emerald-400 overflow-x-auto whitespace-pre-wrap leading-relaxed">
                         {consoleText}
                       </pre>
                     </div>
@@ -992,75 +784,53 @@ export default function ProjectorView() {
               ) : qType === 'logic_puzzle' ? (
                 /* 3. LOGIC RIDDLE / PUZZLE */
                 <motion.div 
-                  initial={{ scale: 0.98, opacity: 0 }} 
+                  initial={{ scale: 0.96, opacity: 0 }} 
                   animate={{ scale: 1, opacity: 1 }} 
-                  className={`w-full max-w-4xl backdrop-blur-2xl border-2 px-8 py-8 md:py-10 rounded-3xl shadow-2xl text-center space-y-4 transition-all ${
-                    isLightMode 
-                      ? 'bg-white/95 border-slate-200/90 shadow-[0_20px_50px_rgba(0,0,0,0.08)]' 
-                      : 'bg-slate-900/80 border-indigo-500/40'
-                  }`}
+                  className="w-full max-w-5xl bg-slate-900/80 backdrop-blur-2xl border-2 border-indigo-500/40 p-8 md:p-12 rounded-3xl shadow-2xl text-center space-y-6"
                 >
-                  <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider ${
-                    isLightMode 
-                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
-                      : 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300'
-                  }`}>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-bold uppercase tracking-wider">
                     <HelpCircle className="w-3.5 h-3.5" />
                     <span>Logic Riddle Decryption</span>
                   </div>
-                  <h1 className={`text-2xl md:text-4xl lg:text-5xl font-extrabold leading-relaxed ${
-                    isLightMode ? 'text-slate-900 font-black' : 'text-white'
-                  }`}>
+                  <h1 className="text-3xl md:text-5xl font-extrabold text-white leading-relaxed">
                     {questionText}
                   </h1>
-                  <p className={`text-sm md:text-base ${
-                    isLightMode ? 'text-slate-600 font-medium' : 'text-slate-400'
-                  }`}>
+                  <p className="text-sm md:text-base text-slate-400">
                     Type your solution into your mobile controller before the time window expires!
                   </p>
                 </motion.div>
               ) : (
                 /* 4. STANDARD MULTIPLE CHOICE (MCQ) */
                 <motion.div 
-                  initial={{ scale: 0.98, opacity: 0 }} 
+                  initial={{ scale: 0.96, opacity: 0 }} 
                   animate={{ scale: 1, opacity: 1 }} 
-                  className="w-full h-full flex flex-col justify-center items-center gap-4 md:gap-6 overflow-hidden my-auto"
+                  className="w-full flex flex-col items-center space-y-8"
                 >
                   {/* Huge Question Text Card */}
-                  <div className={`w-full shrink-0 backdrop-blur-2xl border-2 px-6 py-5 md:px-8 md:py-6 lg:py-8 rounded-3xl shadow-xl text-center transition-all ${
-                    isLightMode 
-                      ? 'bg-white/95 border-slate-200/90 shadow-[0_15px_40px_rgba(0,0,0,0.06)]' 
-                      : 'bg-slate-900/80 border-indigo-500/40'
-                  }`}>
-                    <span className={`inline-block text-xs uppercase font-extrabold tracking-widest px-3 py-1 rounded-md border mb-2 ${
-                      isLightMode 
-                        ? 'text-indigo-800 bg-indigo-50 border-indigo-200' 
-                        : 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30'
-                    }`}>
+                  <div className="w-full bg-slate-900/80 backdrop-blur-2xl border-2 border-indigo-500/40 p-8 md:p-12 rounded-3xl shadow-2xl text-center">
+                    <span className="inline-block text-xs uppercase font-extrabold tracking-widest text-indigo-400 px-3 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/30 mb-3">
                       <HelpCircle className="w-3.5 h-3.5 inline-block mr-1" /> 
                       <span>Challenge Live Now</span>
                     </span>
-                    <h1 className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black leading-tight line-clamp-3 ${
-                      isLightMode ? 'text-slate-900' : 'text-white'
-                    }`}>
+                    <h1 className="text-3xl sm:text-4xl md:text-6xl text-white leading-tight">
                       {questionText}
                     </h1>
                   </div>
 
                   {/* 4 Colored Option Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 lg:gap-5 w-full shrink-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 w-full">
                     {optionsList.map((opt, idx) => {
-                      const b = mcqBadges[idx % mcqBadges.length];
+                      const b = MCQ_BADGES[idx % MCQ_BADGES.length];
 
                       return (
                         <div 
                           key={idx} 
-                          className={`p-4 md:p-5 lg:p-6 rounded-2xl md:rounded-3xl border-2 backdrop-blur-xl flex items-center text-left transition-all ${b.border} ${b.bg} ${b.glow}`}
+                          className={`p-6 md:p-8 rounded-3xl border-2 backdrop-blur-xl flex items-center text-left transition-all ${b.border} ${b.bg} ${b.glow}`}
                         >
-                          <span className={`w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-2xl font-black mr-4 md:mr-5 shrink-0 shadow-lg ${b.badgeBg}`}>
+                          <span className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-2xl md:text-3xl font-black mr-6 shrink-0 shadow-lg ${b.badgeBg}`}>
                             {b.label}
                           </span>
-                          <span className={`text-xl md:text-2xl lg:text-3xl font-extrabold leading-snug break-words ${b.text}`}>
+                          <span className={`text-2xl md:text-4xl font-extrabold leading-snug break-words ${b.text}`}>
                             {opt}
                           </span>
                         </div>
@@ -1074,12 +844,8 @@ export default function ProjectorView() {
         </main>
 
         {/* Footer Bar */}
-        <footer className={`mt-auto shrink-0 text-center border-t pt-2 md:pt-3 z-10 items-center justify-between gap-2 text-xs md:text-sm font-semibold uppercase tracking-wider ${
-          isLightMode 
-            ? 'border-slate-300/80 text-slate-600' 
-            : 'border-white/15 text-slate-300'
-        }`}>
-          <p className="font-bold text-[11px] md:text-xs">
+        <footer className="mt-auto text-center border-t border-white/15 pt-5 z-10 items-center justify-between gap-3 text-xs md:text-sm text-slate-300 font-semibold uppercase tracking-wider">
+          <p className="font-bold">
             {setupCountdown > 0 
               ? 'Get ready to lock your answers...' 
               : questionTimer === 0 
@@ -1087,7 +853,6 @@ export default function ProjectorView() {
                 : 'Answering window open! Submit on Your Device!'}
           </p>
         </footer>
-
       </div>
     );
   }
