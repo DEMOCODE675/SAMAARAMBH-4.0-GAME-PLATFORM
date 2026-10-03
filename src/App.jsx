@@ -7,6 +7,7 @@ import HomePortal from './pages/HomePortal';
 import MobileController from './pages/mobile/MobileController';
 import ProjectorView from './pages/projector/ProjectorView';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminAuthGate from './components/AdminAuthGate';
 import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
@@ -19,7 +20,14 @@ export default function App() {
               <Route path="/" element={<HomePortal />} />
               <Route path="/play" element={<MobileController />} />
               <Route path="/projector" element={<ProjectorView />} />
-              <Route path="/admin" element={<AdminDashboard />} />
+              <Route 
+                path="/admin" 
+                element={
+                  <AdminAuthGate>
+                    <AdminDashboard />
+                  </AdminAuthGate>
+                } 
+              />
             </Routes>
           </BrowserRouter>
         </GameProvider>

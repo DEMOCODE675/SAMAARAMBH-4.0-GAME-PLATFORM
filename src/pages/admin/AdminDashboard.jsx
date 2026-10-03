@@ -25,10 +25,36 @@ import {
   FilePlus, 
   Sliders, 
   Sparkles,
-  Palette
+  Palette,
+  Image as ImageIcon
 } from 'lucide-react';
 import SkribblControl from './components/SkribblControl';
 import { buildWordHint, hashWord } from '../../utils/skribblEngine';
+
+function AdminPhotoPreviewCard({ url, letter, isSingle, idx }) {
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <div className="relative rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 p-1 flex flex-col items-center">
+      <div className="absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded bg-black/85 text-[10px] font-bold text-white border border-white/20">
+        {isSingle ? 'Artifact' : `Image ${letter}`}
+      </div>
+      {hasError ? (
+        <div className="w-full h-28 flex flex-col items-center justify-center text-[10px] text-rose-400 bg-rose-950/40 rounded-lg p-2 text-center">
+          <AlertCircle className="w-4 h-4 text-rose-400 mb-1" />
+          <span>Failed to load preview</span>
+        </div>
+      ) : (
+        <img 
+          src={url} 
+          alt={`Preview ${idx + 1}`} 
+          className="w-full h-28 object-contain rounded-lg"
+          onError={() => setHasError(true)}
+        />
+      )}
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('builder'); 
@@ -624,15 +650,61 @@ export default function AdminDashboard() {
               {uiType === 'photo_recognize' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-slate-300 text-xs font-semibold uppercase mb-1.5">Image URLs (Comma-separated for side-by-side images)</label>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+                      <label className="block text-slate-300 text-xs font-semibold uppercase">
+                        Image URL(s)
+                      </label>
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        Paste 1 URL for single image, or comma-separate for 2–4 images
+                      </span>
+                    </div>
                     <input 
                       type="text" 
                       value={photoUrls} 
                       onChange={e => setPhotoUrls(e.target.value)} 
-                      className="w-full bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-slate-100 text-sm outline-none focus:border-rose-500" 
-                      placeholder="https://imgur.com/fake.png, https://imgur.com/real.png" 
+                      className="w-full bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-slate-100 text-sm outline-none focus:border-rose-500 font-mono" 
+                      placeholder="Single: https://.../pic.png  OR  Multi: https://.../imgA.png, https://.../imgB.png" 
                       required 
                     />
+
+                    {/* LIVE URL & IMAGE PREVIEW BOX */}
+                    {(() => {
+                      const parsedUrls = photoUrls.split(',').map(s => s.trim()).filter(Boolean);
+                      if (parsedUrls.length === 0) return null;
+
+                      return (
+                        <div className="mt-2.5 p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                              <ImageIcon className="w-3.5 h-3.5 text-rose-400" />
+                              {parsedUrls.length === 1 
+                                ? 'Single Image Mode (1 Image Verified)' 
+                                : `Comparison Mode (${parsedUrls.length} Images side-by-side)`}
+                            </span>
+                            <span className="text-[10px] font-mono font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-md">
+                              {parsedUrls.length === 1 ? '1 Image Ready' : `${parsedUrls.length} Images Ready`}
+                            </span>
+                          </div>
+
+                          <div className={`grid gap-2 ${parsedUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-4'}`}>
+                            {parsedUrls.map((url, idx) => {
+                              const letter = String.fromCharCode(65 + idx);
+                              const isSingle = parsedUrls.length === 1;
+
+                              return (
+                                <AdminPhotoPreviewCard 
+                                  key={`${url}-${idx}`} 
+                                  url={url} 
+                                  letter={letter} 
+                                  isSingle={isSingle} 
+                                  idx={idx} 
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div>
                     <label className="block text-slate-300 text-xs font-semibold uppercase mb-1.5">Analysis Prompt</label>
@@ -895,7 +967,7 @@ export default function AdminDashboard() {
                     const isLive = liveState?.status === 'playing' && liveState?.activeQuestion?.id === block.id;
                     const isUsed = block.isUsed;
                     const textLabel = block.type === 'skribbl'
-                      ? `🎨 Word: "${block.payload?.word}" (${block.payload?.category || 'Tech'})`
+                      ? `Word: "${block.payload?.word}" (${block.payload?.category || 'Tech'})`
                       : (block.payload?.question || block.payload?.missionText || block.payload?.prompt || block.payload?.puzzleText || 'Challenge Block');
 
                     return (
@@ -914,9 +986,20 @@ export default function AdminDashboard() {
                           <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md uppercase tracking-wider shrink-0 border ${
                             block.type === 'skribbl'
                               ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
-                              : 'bg-slate-800 text-slate-300 border-slate-700'
+                              : block.type === 'photo_recognize'
+                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                : 'bg-slate-800 text-slate-300 border-slate-700'
                           }`}>
-                            {block.type === 'skribbl' ? 'Skribbl' : block.type}
+                            {block.type === 'skribbl' 
+                              ? 'Skribbl' 
+                              : block.type === 'photo_recognize'
+                                ? `Photo (${(() => {
+                                    const imgs = Array.isArray(block.payload?.images) && block.payload.images.length > 0 
+                                      ? block.payload.images 
+                                      : (block.payload?.imageUrl ? [block.payload.imageUrl] : []);
+                                    return imgs.length === 1 ? '1 img' : `${imgs.length} imgs`;
+                                  })()})`
+                                : block.type}
                           </span>
                           <span className={`text-sm font-semibold truncate ${
                             isLive ? 'text-rose-300' : isUsed ? 'text-slate-500 line-through' : 'text-slate-200'

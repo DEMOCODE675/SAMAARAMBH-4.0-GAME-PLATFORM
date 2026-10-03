@@ -75,6 +75,68 @@ function TopLeftLogoBadge({ isLightMode }) {
   );
 }
 
+// Projector Photo Card with pure React state error handling
+function ProjectorImageCard({ img, isSingleImage, letter, badgeClass, isLightMode }) {
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <div className={`relative h-full max-h-[48vh] rounded-2xl overflow-hidden border-2 p-2 shadow-xl flex flex-col transition-all ${
+      isLightMode 
+        ? 'bg-white border-slate-200/90 shadow-[0_10px_25px_rgba(0,0,0,0.06)]' 
+        : 'bg-slate-900/90 border-white/20'
+    }`}>
+      {/* Prominent Badge: Single image displays "Visual Artifact", multiple display "Image A/B/C/D" */}
+      <div className={`absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg border backdrop-blur-md shadow-md ${
+        isLightMode 
+          ? 'bg-white/95 border-slate-200 text-slate-900' 
+          : 'bg-slate-950/85 border-white/20 text-white'
+      }`}>
+        {isSingleImage ? (
+          <>
+            <span className="w-5 h-5 rounded-md font-black text-[11px] flex items-center justify-center text-white shadow-sm bg-gradient-to-br from-indigo-500 to-indigo-600">
+              <ImageIcon className="w-3 h-3" />
+            </span>
+            <span className={`text-[11px] font-black uppercase tracking-wider ${
+              isLightMode ? 'text-slate-800' : 'text-white'
+            }`}>
+              Visual Artifact
+            </span>
+          </>
+        ) : (
+          <>
+            <span className={`w-5 h-5 rounded-md font-black text-[11px] flex items-center justify-center text-white shadow-sm ${badgeClass}`}>
+              {letter}
+            </span>
+            <span className={`text-[11px] font-black uppercase tracking-wider ${
+              isLightMode ? 'text-slate-800' : 'text-white'
+            }`}>
+              Image {letter}
+            </span>
+          </>
+        )}
+      </div>
+
+      <div className={`w-full h-full rounded-xl overflow-hidden flex items-center justify-center p-1.5 ${
+        isLightMode ? 'bg-slate-50' : 'bg-black/60'
+      }`}>
+        {hasError ? (
+          <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-4 text-center">
+            <ImageIcon className="w-8 h-8 text-slate-500 mb-2" />
+            <span className="text-xs font-semibold">Image Preview Unavailable</span>
+          </div>
+        ) : (
+          <img 
+            src={img} 
+            alt={isSingleImage ? 'Visual Artifact' : `Artifact ${letter}`} 
+            className="w-full h-full object-contain rounded-lg" 
+            onError={() => setHasError(true)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ProjectorView() {
   const { gameState } = useContext(GameContext);
   
@@ -719,7 +781,13 @@ export default function ProjectorView() {
     // Extract challenge contents across formats
     const questionText = qData.question || payload.question || payload.prompt || payload.missionText || payload.puzzleText || "Check your device for the active challenge!";
     const optionsList = qData.options || payload.options || [];
-    const imagesList = payload.images || (payload.imageUrl ? [payload.imageUrl] : []);
+    const rawImages = (Array.isArray(payload.images) && payload.images.length > 0)
+      ? payload.images
+      : (typeof payload.images === 'string' && payload.images.trim()
+          ? payload.images.split(',')
+          : (payload.imageUrl ? (typeof payload.imageUrl === 'string' ? payload.imageUrl.split(',') : [payload.imageUrl]) : []));
+    const imagesList = rawImages.map(u => (typeof u === 'string' ? u.trim() : '')).filter(Boolean);
+    const isSingleImage = imagesList.length === 1;
     const consoleText = payload.consoleText || "";
 
     const isTimeCritical = questionTimer <= 5;
@@ -823,8 +891,8 @@ export default function ProjectorView() {
                   {/* Images Display Grid - Dynamically fills remaining height */}
                   {imagesList.length > 0 && (
                     <div className={`w-full flex-1 min-h-0 grid gap-3 md:gap-4 items-center justify-center ${
-                      imagesList.length === 1 
-                        ? 'grid-cols-1 max-w-xl mx-auto' 
+                      isSingleImage 
+                        ? 'grid-cols-1 max-w-3xl lg:max-w-4xl mx-auto' 
                         : imagesList.length === 2 
                           ? 'grid-cols-2 max-w-5xl mx-auto' 
                           : imagesList.length === 3 
@@ -839,40 +907,14 @@ export default function ProjectorView() {
                         const badgeClass = isA ? 'bg-rose-600' : isB ? 'bg-blue-600' : isC ? 'bg-amber-600' : 'bg-emerald-600';
 
                         return (
-                          <div 
-                            key={i} 
-                            className={`relative h-full max-h-[46vh] rounded-2xl overflow-hidden border-2 p-2 shadow-xl flex flex-col transition-all ${
-                              isLightMode 
-                                ? 'bg-white border-slate-200/90 shadow-[0_10px_25px_rgba(0,0,0,0.06)]' 
-                                : 'bg-slate-900/90 border-white/20'
-                            }`}
-                          >
-                            {/* Prominent Image A/B/C/D Badge */}
-                            <div className={`absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg border backdrop-blur-md shadow-md ${
-                              isLightMode 
-                                ? 'bg-white/95 border-slate-200 text-slate-900' 
-                                : 'bg-slate-950/85 border-white/20 text-white'
-                            }`}>
-                              <span className={`w-5 h-5 rounded-md font-black text-[11px] flex items-center justify-center text-white shadow-sm ${badgeClass}`}>
-                                {letter}
-                              </span>
-                              <span className={`text-[11px] font-black uppercase tracking-wider ${
-                                isLightMode ? 'text-slate-800' : 'text-white'
-                              }`}>
-                                Image {letter}
-                              </span>
-                            </div>
-
-                            <div className={`w-full h-full rounded-xl overflow-hidden flex items-center justify-center p-1.5 ${
-                              isLightMode ? 'bg-slate-50' : 'bg-black/60'
-                            }`}>
-                              <img 
-                                src={img} 
-                                alt={`Artifact ${letter}`} 
-                                className="w-full h-full object-contain rounded-lg" 
-                              />
-                            </div>
-                          </div>
+                          <ProjectorImageCard 
+                            key={`${img}-${i}`} 
+                            img={img} 
+                            isSingleImage={isSingleImage} 
+                            letter={letter} 
+                            badgeClass={badgeClass} 
+                            isLightMode={isLightMode} 
+                          />
                         );
                       })}
                     </div>

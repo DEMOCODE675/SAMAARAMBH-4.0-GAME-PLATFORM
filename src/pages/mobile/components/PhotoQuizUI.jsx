@@ -10,7 +10,8 @@ import {
   Moon, 
   Maximize2, 
   X, 
-  AlertCircle 
+  AlertCircle,
+  Image as ImageIcon
 } from 'lucide-react';
 import StageCountdown from '../../../components/StageCountdown';
 
@@ -45,6 +46,59 @@ const OPTION_BADGES = [
   { label: 'D', bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/60' }
 ];
 
+// Mobile Photo Thumbnail with pure React state error handling
+function PhotoQuizThumbnail({ imgUrl, letter, isSingleImage, onZoom }) {
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <button 
+      type="button"
+      onClick={() => onZoom({ 
+        url: imgUrl, 
+        letter: isSingleImage ? null : letter, 
+        label: isSingleImage ? 'Visual Artifact' : `Image ${letter}` 
+      })}
+      className={`relative group w-full bg-slate-950/20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-all cursor-zoom-in ${
+        isSingleImage ? 'h-48 sm:h-56' : 'h-36 sm:h-40'
+      }`}
+    >
+      {/* Visual Image Badge */}
+      <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-950/85 border border-white/20 backdrop-blur-sm shadow-md">
+        {isSingleImage ? (
+          <span className="text-white text-[10px] font-bold tracking-wider flex items-center gap-1">
+            <ImageIcon className="w-2.5 h-2.5 text-indigo-400" />
+            Artifact
+          </span>
+        ) : (
+          <span className="text-white text-[10px] font-bold tracking-wider">
+            Image {letter}
+          </span>
+        )}
+      </div>
+
+      {hasError ? (
+        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-2 text-center">
+          <ImageIcon className="w-6 h-6 text-slate-500 mb-1" />
+          <span className="text-[10px]">Image Unavailable</span>
+        </div>
+      ) : (
+        <img 
+          src={imgUrl} 
+          alt={isSingleImage ? 'Visual Artifact' : `Artifact ${letter}`} 
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+          onError={() => setHasError(true)}
+        />
+      )}
+
+      <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+        <div className="p-1.5 rounded-lg bg-white/90 dark:bg-slate-900/90 text-slate-800 dark:text-white shadow-sm">
+          <Maximize2 className="w-4 h-4" />
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setParentSubmitted }) {
   const [selected, setSelected] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,7 +123,13 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
   const questionId = gameState?.activeQuestion?.id;
   const totalTimeLimit = gameState?.activeQuestion?.timeLimit || 20;
 
-  const images = payload.images || (payload.imageUrl ? [payload.imageUrl] : []);
+  const rawImages = (Array.isArray(payload.images) && payload.images.length > 0)
+    ? payload.images
+    : (typeof payload.images === 'string' && payload.images.trim()
+        ? payload.images.split(',')
+        : (payload.imageUrl ? (typeof payload.imageUrl === 'string' ? payload.imageUrl.split(',') : [payload.imageUrl]) : []));
+  const images = rawImages.map(u => (typeof u === 'string' ? u.trim() : '')).filter(Boolean);
+  const isSingleImage = images.length === 1;
   
   let optionsList = [];
   if (Array.isArray(payload.options)) {
@@ -432,7 +492,7 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
             }`}>
               <div className="flex justify-between items-center mb-2 px-1 text-xs">
                 <span className="font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">
-                  Artifacts to Inspect ({images.length})
+                  {isSingleImage ? 'Artifact to Inspect' : `Artifacts to Inspect (${images.length})`}
                 </span>
                 <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium flex items-center gap-1">
                   <Maximize2 className="w-3 h-3" /> Tap to expand
@@ -443,30 +503,13 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
                 {images.map((imgUrl, index) => {
                   const letter = String.fromCharCode(65 + index);
                   return (
-                    <button 
-                      key={index} 
-                      type="button"
-                      onClick={() => setActiveImageZoom({ url: imgUrl, letter, label: `Image ${letter}` })}
-                      className="relative group h-40 w-full bg-slate-950/20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-all cursor-zoom-in"
-                    >
-                      {/* Visual Image A / B Badge */}
-                      <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-950/85 border border-white/20 backdrop-blur-sm shadow-md">
-                        <span className="text-white text-[10px] font-bold tracking-wider">
-                          Image {letter}
-                        </span>
-                      </div>
-
-                      <img 
-                        src={imgUrl} 
-                        alt={`Artifact ${letter}`} 
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="p-1.5 rounded-lg bg-white/90 dark:bg-slate-900/90 text-slate-800 dark:text-white shadow-sm">
-                          <Maximize2 className="w-4 h-4" />
-                        </div>
-                      </div>
-                    </button>
+                    <PhotoQuizThumbnail 
+                      key={`${imgUrl}-${index}`} 
+                      imgUrl={imgUrl} 
+                      letter={letter} 
+                      isSingleImage={isSingleImage} 
+                      onZoom={setActiveImageZoom} 
+                    />
                   );
                 })}
               </div>
@@ -594,14 +637,15 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
             onClick={() => setActiveImageZoom(null)} 
             className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 cursor-zoom-out"
           >
-            {/* Top Left: Prominent Image Letter Badge */}
+            {/* Top Left: Prominent Image Letter Badge (only when multi-image) */}
             <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
               {zoomLetter && (
                 <span className="w-7 h-7 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-lg">
                   {zoomLetter}
                 </span>
               )}
-              <span className="text-white font-bold text-sm bg-slate-900/80 px-3 py-1 rounded-xl backdrop-blur-md border border-white/20">
+              <span className="text-white font-bold text-sm bg-slate-900/80 px-3 py-1.5 rounded-xl backdrop-blur-md border border-white/20 flex items-center gap-1.5">
+                {!zoomLetter && <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />}
                 {zoomLabel}
               </span>
             </div>
