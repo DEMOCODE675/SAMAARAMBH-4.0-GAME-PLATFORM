@@ -9,7 +9,7 @@ export const SKRIBBL_CATEGORIES = [
     words: [
       'Bug', 'Loop', 'Array', 'Stack', 'Queue', 'Cache', 'Token', 'Server', 'Client', 'Pointer',
       'Binary', 'Compiler', 'Database', 'Framework', 'Algorithm', 'Function', 'Variable', 'Recursion',
-      'Git', 'Docker', 'Linux', 'Python', 'React', 'Firewall', 'Keyboard', 'Monitor', 'Robot',
+      'Git', 'GitHub', 'Blockchain', 'Microsoft', 'Terminal', 'Docker', 'Linux', 'Python', 'React', 'Firewall', 'Keyboard', 'Monitor', 'Robot',
       'API', 'Bug Bounty', 'Code Review', 'Merge Conflict', 'Rubber Duck', 'Hello World'
     ]
   },
@@ -17,7 +17,7 @@ export const SKRIBBL_CATEGORIES = [
     id: 'cybersecurity',
     label: 'Cybersecurity',
     words: [
-      'Hacker', 'Phishing', 'Malware', 'Ransomware', 'Firewall', 'Encryption', 'Password', 'Two Factor',
+      'Hacker', 'Phishing', 'Malware', 'Ransomware', 'Firewall', 'Encryption', 'Password', 'Two Factor Authentication', '2FA',
       'Brute Force', 'Zero Day', 'Botnet', 'Keylogger', 'Spyware', 'VPN', 'Proxy', 'Patch',
       'Social Engineering', 'Data Breach', 'Phantom Tab', 'Insider Threat', 'Red Team', 'Blue Team',
       'Man in the Middle', 'Denial of Service', 'Digital Forensics', 'Incident Response'
