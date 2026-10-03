@@ -768,6 +768,7 @@ export default function ProjectorView() {
             activeQ={qData}
             gameState={gameState}
             playerCount={playerCount}
+            isLightMode={isLightMode}
             embedded
           />
         </div>
@@ -846,7 +847,10 @@ export default function ProjectorView() {
           {setupCountdown > 0 ? (
             /* 10-Second Countdown Before Question Is Revealed */
             <StageCountdown
+              seconds={setupCountdown}
               secondsRemaining={setupCountdown}
+              mode="projector"
+              isDarkMode={!isLightMode}
               roundName={qData.round || (gameState.round ? `Round ${gameState.round}` : "Samarambh 4.0")}
               questionNumber={qData.questionNumber || qData.roundIndex || 1}
               totalQuestions={gameState.totalQuestions || 10}
@@ -1015,7 +1019,7 @@ export default function ProjectorView() {
                       <HelpCircle className="w-3.5 h-3.5 inline-block mr-1" /> 
                       <span>Challenge Live Now</span>
                     </span>
-                    <h1 className={`text-3xl sm:text-4xl md:text-6xl text-white leading-tight ${
+                    <h1 className={`text-3xl sm:text-4xl md:text-6xl leading-tight ${
                       isLightMode ? 'text-slate-900 font-black' : 'text-white'
                     }`}>
                       {questionText}

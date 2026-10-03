@@ -26,7 +26,7 @@ const GUESSES_COL = collection(db, 'events', 'samarambh', 'skribblGuesses');
 
 // When `embedded`, the stage fills its parent (ProjectorView <main>) instead of
 // the full viewport, so the projector keeps its single-page chrome.
-export default function SkribblStage({ activeQ, gameState, playerCount, embedded = false }) {
+export default function SkribblStage({ activeQ, gameState, playerCount, embedded = false, isLightMode = false }) {
   const timeLimit = activeQ?.timeLimit || 75;
   const phase = gameState?.skribbl?.phase || 'drawing';
 
@@ -75,28 +75,44 @@ export default function SkribblStage({ activeQ, gameState, playerCount, embedded
       embedded
         ? 'w-full h-full flex flex-col'
         : 'min-h-screen flex flex-col p-6 md:p-10'
-    } bg-[#070b14] text-white relative overflow-hidden select-none font-sans`}>
+    } ${isLightMode ? 'bg-transparent text-slate-900' : 'bg-[#070b14] text-white'} relative overflow-hidden select-none font-sans`}>
       {/* Top header bar */}
-      <header className="flex justify-between items-center border-b border-white/15 pb-5 z-10 pl-20 md:pl-24">
+      <header className={`flex justify-between items-center border-b pb-5 z-10 pl-20 md:pl-24 ${
+        isLightMode ? 'border-slate-300 text-slate-800' : 'border-white/15 text-white'
+      }`}>
         <div className="flex items-center gap-3">
           {/* Top-left area kept clean for organizer logo */}
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-sm font-bold font-mono">
+          <div className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold font-mono ${
+            isLightMode 
+              ? 'bg-indigo-50 border border-indigo-200 text-indigo-700' 
+              : 'bg-indigo-500/15 border border-indigo-500/30 text-indigo-300'
+          }`}>
             <Users className="w-4 h-4" />
             <span>{playerCount || 0} Players</span>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm font-bold font-mono">
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold font-mono ${
+            isLightMode 
+              ? 'bg-emerald-50 border border-emerald-300 text-emerald-800' 
+              : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
+          }`}>
             <CheckCircle2 className="w-4 h-4" />
             <span>{correctCount} Guessed</span>
           </div>
           <div className={`px-6 py-2.5 rounded-2xl border-2 text-2xl md:text-3xl font-black font-mono flex items-center gap-2.5 ${
-            remaining <= 5
-              ? 'border-rose-500 text-rose-400 bg-rose-950/60 animate-bounce'
-              : remaining <= 10
-                ? 'border-amber-400 text-amber-300 bg-amber-950/40'
-                : 'border-indigo-400 text-indigo-300 bg-indigo-950/40'
+            isLightMode
+              ? (remaining <= 5
+                  ? 'border-rose-500 text-rose-600 bg-rose-50 animate-bounce'
+                  : remaining <= 10
+                    ? 'border-amber-400 text-amber-700 bg-amber-50'
+                    : 'border-indigo-300 text-indigo-700 bg-indigo-50')
+              : (remaining <= 5
+                  ? 'border-rose-500 text-rose-400 bg-rose-950/60 animate-bounce'
+                  : remaining <= 10
+                    ? 'border-amber-400 text-amber-300 bg-amber-950/40'
+                    : 'border-indigo-400 text-indigo-300 bg-indigo-950/40')
           }`}>
             <Clock className="w-6 h-6" />
             <span>{isReveal ? '0' : Math.ceil(remaining)}s</span>

@@ -7,22 +7,29 @@ import { Sun, Moon, Clock, Sparkles } from 'lucide-react';
  * Supports both mobile contestant controllers and stage auditorium projectors
  */
 export default function StageCountdown({
-  seconds = 10,
+  seconds,
+  secondsRemaining,
   maxSeconds = 10,
-  mode = 'mobile', // 'mobile' | 'projector'
+  mode,
+  isProjector = false,
   isDarkMode = true,
   onToggleTheme,
   badgeText = 'Incoming Arena Challenge',
-  title = 'Get Ready!',
+  title,
   subtitle = 'Prepare to choose your answer quickly. Speed and precision yield peak multipliers.',
   timeWindow = 20,
   logoSrc = '/images/logo.jpg',
-  brandName = 'Samarambh 4.0'
+  brandName = 'Samarambh 4.0',
+  roundName,
+  questionNumber
 }) {
-  const progressRatio = Math.max(0, Math.min(1, seconds / maxSeconds));
+  const currentSeconds = seconds !== undefined ? seconds : (secondsRemaining !== undefined ? secondsRemaining : 10);
+  const currentMode = mode || (isProjector ? 'projector' : 'mobile');
+  const currentTitle = title || (roundName ? `${roundName} • Question ${questionNumber || 1}` : 'Incoming Arena Challenge');
+  const progressRatio = Math.max(0, Math.min(1, currentSeconds / maxSeconds));
 
   // PROJECTOR CINEMA VIEW
-  if (mode === 'projector') {
+  if (currentMode === 'projector') {
     return (
       <motion.div 
         initial={{ scale: 0.94, opacity: 0 }} 
@@ -61,14 +68,14 @@ export default function StageCountdown({
           <div className="absolute inset-0 flex flex-col items-center justify-center select-none">
             <AnimatePresence mode="popLayout">
               <motion.span 
-                key={seconds}
+                key={currentSeconds}
                 initial={{ scale: 1.4, opacity: 0, y: -10 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.7, opacity: 0, y: 10 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
                 className="text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-300 via-amber-500 to-orange-600 font-mono tracking-tight drop-shadow-[0_0_40px_rgba(245,158,11,0.6)]"
               >
-                {seconds}
+                {currentSeconds}
               </motion.span>
             </AnimatePresence>
           </div>
@@ -77,7 +84,7 @@ export default function StageCountdown({
         <h2 className={`text-3xl md:text-5xl lg:text-6xl font-black tracking-wider uppercase mb-3 drop-shadow-md ${
           isDarkMode ? 'text-white' : 'text-slate-900'
         }`}>
-          {title}
+          {currentTitle}
         </h2>
 
         {/* Tactical status readout */}
@@ -164,14 +171,14 @@ export default function StageCountdown({
           <div className="absolute inset-0 flex flex-col items-center justify-center select-none">
             <AnimatePresence mode="popLayout">
               <motion.span
-                key={seconds}
+                key={currentSeconds}
                 initial={{ scale: 1.3, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ duration: 0.25 }}
                 className="text-6xl font-black text-indigo-600 dark:text-indigo-400 font-mono tracking-tight"
               >
-                {seconds}
+                {currentSeconds}
               </motion.span>
             </AnimatePresence>
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -187,7 +194,7 @@ export default function StageCountdown({
         </div>
 
         <h2 className="text-2xl font-extrabold tracking-tight mb-2">
-          {title}
+          {currentTitle}
         </h2>
         
         <p className={`text-xs max-w-xs mx-auto leading-relaxed ${
