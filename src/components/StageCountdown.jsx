@@ -118,7 +118,7 @@ export default function StageCountdown({
           />
           <div>
             <span className="font-extrabold text-sm tracking-tight">
-              Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+              MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
             </span>
             <p className="text-[10px] text-slate-500">{brandName}</p>
           </div>

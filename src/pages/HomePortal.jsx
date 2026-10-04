@@ -93,9 +93,8 @@ export default function HomePortal() {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-black text-lg tracking-tight">
-                Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+                MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
               </span>
-              
             </div>
           </div>
         </div>

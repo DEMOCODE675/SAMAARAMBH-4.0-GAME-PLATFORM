@@ -93,7 +93,7 @@ export default function AdminAuthGate({ children }) {
           />
           <div>
             <span className="font-black text-sm tracking-tight text-white block">
-              Tech<span className="text-rose-500">Arena</span>
+              MLSA<span className="text-rose-500">MIET</span>
             </span>
             <span className="text-[10px] text-slate-400 font-mono tracking-wider block">
               Samarambh 4.0

@@ -170,7 +170,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
             <img 
               src="/images/logo.jpg" 
               onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
-              alt="TechArena Logo" 
+              alt="MLSAMIET Logo" 
               className={`h-10 w-10 md:h-11 md:w-11 rounded-xl object-contain p-1 border shadow-sm transition-all ${
                 isDarkMode 
                   ? 'bg-slate-900 border-slate-800' 
@@ -179,11 +179,10 @@ export default function PlayerDashboard({ onOpenTeam }) {
             />
             <div>
               <div className="flex items-center gap-2">
-                <span className="hidden md:inline font-extrabold text-base md:text-lg tracking-tight">
-                  Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+                <span className="font-extrabold text-sm md:text-base tracking-tight">
+                  MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
                 </span>
               </div>
-             
             </div>
           </div>
 

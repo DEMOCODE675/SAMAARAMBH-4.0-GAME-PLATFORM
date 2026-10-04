@@ -53,16 +53,15 @@ export default function PlayerLogin() {
           <img 
             src="/images/logo.jpg" 
             onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
-            alt="TechArena" 
+            alt="MLSAMIET" 
             className={`h-9 w-9 rounded-xl object-contain p-1 border shadow-sm ${
               isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
             }`}
           />
           <div>
             <span className="font-extrabold text-sm tracking-tight">
-              Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+              MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
             </span>
-
           </div>
         </div>
 
@@ -179,7 +178,7 @@ export default function PlayerLogin() {
               disabled={isSubmitting || !inputValue.trim()} 
               className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition-all shadow-md shadow-indigo-600/25 active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
             >
-              <span>{isSubmitting ? 'Connecting...' : (isReturningUser ? 'Login' : 'Register')}</span>
+              <span>{isSubmitting ? 'Connecting...' : (isReturningUser ? 'Login' : 'Submit')}</span>
               {!isSubmitting && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>

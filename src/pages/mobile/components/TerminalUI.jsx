@@ -228,13 +228,13 @@ export default function TerminalUI({ payload, setHasSubmitted: setParentSubmitte
             <img 
               src="/images/logo.jpg" 
               onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
-              alt="TechArena" 
+              alt="MLSAMIET" 
               className={`h-9 w-9 rounded-xl object-contain p-1 border shadow-sm ${
                 isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
               }`}
             />
             <span className="font-extrabold text-sm tracking-tight">
-              Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+              MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
             </span>
           </div>
 
@@ -335,7 +335,7 @@ export default function TerminalUI({ payload, setHasSubmitted: setParentSubmitte
             <img 
               src="/images/logo.jpg" 
               onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
-              alt="TechArena" 
+              alt="MLSAMIET" 
               className={`h-9 w-9 rounded-xl object-contain p-1 border shadow-sm ${
                 isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
               }`}

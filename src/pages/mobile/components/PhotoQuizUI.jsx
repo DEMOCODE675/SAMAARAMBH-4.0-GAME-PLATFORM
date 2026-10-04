@@ -325,7 +325,7 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
             <img 
               src="/images/logo.jpg" 
               onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
-              alt="TechArena" 
+              alt="MLSAMIET" 
               className={`h-9 w-9 rounded-xl object-contain p-1 border shadow-sm ${
                 isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
               }`}
@@ -432,7 +432,7 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
             <img 
               src="/images/logo.jpg" 
               onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
-              alt="TechArena" 
+              alt="MLSAMIET" 
               className={`h-9 w-9 rounded-xl object-contain p-1 border shadow-sm ${
                 isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
               }`}
