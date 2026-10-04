@@ -204,7 +204,7 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
               }`}
             />
             <span className="font-extrabold text-sm tracking-tight">
-              Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+              MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
             </span>
           </div>
 
@@ -313,7 +313,7 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-sm tracking-tight">
-                  Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+                  MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
                 </span>
                 <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
                   Riddle

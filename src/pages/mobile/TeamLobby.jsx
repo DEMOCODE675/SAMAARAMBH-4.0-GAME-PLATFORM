@@ -463,7 +463,7 @@ export default function TeamLobby({ onBack }) {
 
       {/* Footer Branding */}
       <div className="text-center text-[11px] text-slate-400 font-medium">
-        TechArena · Squad Arena Mode
+        MLSA MIET · Squad Mode
       </div>
     </div>
   );

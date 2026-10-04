@@ -207,7 +207,7 @@ export default function AdminAuthGate({ children }) {
 
       {/* Footer */}
       <footer className="w-full text-center text-xs text-slate-500 pb-4 z-10">
-        Organized by <strong className="text-slate-400">Microsoft Learn Student Ambassadors MIET</strong> · TechArena
+        Organized by <strong className="text-slate-400">MLSA MIET</strong>
       </footer>
     </div>
   );

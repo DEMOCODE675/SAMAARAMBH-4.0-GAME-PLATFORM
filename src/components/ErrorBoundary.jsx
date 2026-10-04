@@ -12,7 +12,7 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error("TechArena caught unhandled runtime exception:", error, errorInfo);
+    console.error("Game caught unhandled runtime exception:", error, errorInfo);
   }
 
   handleReload = () => {
@@ -33,7 +33,7 @@ export default class ErrorBoundary extends React.Component {
                 System Guard
               </span>
               <h1 className="text-2xl font-black tracking-tight text-white mt-3">
-                Arena State Interrupted
+                Game State Interrupted
               </h1>
               <p className="text-xs text-slate-400 mt-2 leading-relaxed">
                 An unexpected interface anomaly was intercepted. Your connection profile and saved answers remain safely secured.
@@ -45,7 +45,7 @@ export default class ErrorBoundary extends React.Component {
               className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 px-6 rounded-2xl text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>Re-enter Arena</span>
+              <span>Re-enter Game</span>
             </button>
           </div>
         </div>

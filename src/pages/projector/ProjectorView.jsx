@@ -561,7 +561,7 @@ export default function ProjectorView() {
         <div className={`z-10 text-center text-xs md:text-sm font-medium shrink-0 pt-2 ${
           isLightMode ? 'text-slate-500' : 'text-slate-400'
         }`}>
-          Organized by <strong className={isLightMode ? 'text-slate-900' : 'text-white'}>Microsoft Learn Student Ambassadors MIET</strong> · Powered by TechArena
+          Organized by <strong className={isLightMode ? 'text-slate-900' : 'text-white'}>MLSA MIET</strong>
         </div>
       </div>
     );

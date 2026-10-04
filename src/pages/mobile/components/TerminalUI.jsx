@@ -343,7 +343,7 @@ export default function TerminalUI({ payload, setHasSubmitted: setParentSubmitte
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-sm tracking-tight">
-                  Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+                  MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
                 </span>
                 <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
                   CLI

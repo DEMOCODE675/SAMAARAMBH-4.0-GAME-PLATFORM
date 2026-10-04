@@ -42,7 +42,7 @@ function LockedFallbackView() {
             }`}
           />
           <span className="font-extrabold text-sm tracking-tight">
-            Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+            MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
           </span>
         </div>
 
@@ -104,7 +104,7 @@ function LockedFallbackView() {
 
       {/* Footer Branding */}
       <div className="text-center text-[11px] text-slate-400 pb-2">
-        <span className="font-semibold text-slate-300">MLSA miet</span> © 2026 All Rights Reserved
+      <span className="font-semibold text-slate-300">MLSA MIET</span> © 2026 All Rights Reserved
       </div>
     </div>
   );
