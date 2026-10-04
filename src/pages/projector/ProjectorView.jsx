@@ -890,8 +890,8 @@ export default function ProjectorView() {
                         ? 'bg-cyan-50 border-cyan-300 text-cyan-800' 
                         : 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300'
                     }`}>
-                      <ImageIcon className="w-3 h-3" />
-                      <span>Visual Evidence Inspection</span>
+                    { /* <ImageIcon className="w-3 h-3" /> */ }
+                      {/*<span>Visual Evidence Inspection</span>*/}
                     </div>
                     <h1 className={`text-xl md:text-2xl lg:text-3xl font-black leading-tight ${
                       isLightMode ? 'text-slate-900' : 'text-white'

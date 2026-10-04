@@ -305,8 +305,8 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
         mode="mobile"
         isDarkMode={isDarkMode}
         onToggleTheme={toggleTheme}
-        badgeText="Inspection Loading"
-        title="Inspect the Artifact!"
+        badgeText="Visual Loading"
+        title="Visual Threat Analysis"
         subtitle="Carefully review the screenshot or image artifacts to determine the verdict."
         timeWindow={totalTimeLimit}
         brandName="Image Analysis"
@@ -331,7 +331,7 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
               }`}
             />
             <span className="font-extrabold text-sm tracking-tight">
-              Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+              MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
             </span>
           </div>
 
@@ -393,7 +393,7 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
 
         {/* Footer Branding */}
         <div className="text-center text-[11px] text-slate-400 pb-2">
-          <span className="font-semibold text-slate-300">MLSA miet</span> © 2026 All Rights Reserved
+          <span className="font-semibold text-slate-300">MLSA MIET</span> © 2026 All Rights Reserved
         </div>
       </div>
     );
@@ -440,15 +440,15 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-sm tracking-tight">
-                  Tech<span className="text-indigo-600 dark:text-indigo-400">Arena</span>
+                  MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
                 </span>
-                <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800">
+                {/*<span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800">
                   Inspect
-                </span>
+                </span>*/}
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              {/*<p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Visual Challenge
-              </p>
+              </p>*/}
             </div>
           </div>
 
