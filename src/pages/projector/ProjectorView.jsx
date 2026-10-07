@@ -507,40 +507,13 @@ export default function ProjectorView() {
             initial={{ scale: 0.94, opacity: 0 }} 
             animate={{ scale: 1, opacity: 1 }} 
             transition={{ duration: 0.6, delay: 0.2 }} 
-            className={`w-full max-w-4xl backdrop-blur-2xl border-2 p-6 md:p-8 rounded-3xl grid grid-cols-1 md:grid-cols-2 items-center gap-6 md:gap-10 transition-all shrink-0 ${
+            className={`w-full max-w-4xl backdrop-blur-2xl border-2 p-6 md:p-8 rounded-3xl flex flex-col items-center justify-center gap-4 md:gap-5 transition-all shrink-0 ${
               isLightMode 
                 ? 'bg-white/95 border-slate-200/90 shadow-[0_25px_60px_rgba(0,0,0,0.08)]' 
                 : 'bg-slate-900/70 border-indigo-500/40 shadow-[0_0_80px_rgba(99,102,241,0.25)]'
             }`}
           >
-            {/* Left Instructions */}
-            <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-3">
-              <span className={`text-xs uppercase font-extrabold tracking-widest px-3 py-1 rounded-md border ${
-                isLightMode 
-                  ? 'text-indigo-700 bg-indigo-50 border-indigo-200' 
-                  : 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30'
-              }`}>
-                Live Registration
-              </span>
-
-              <h2 className={`text-2xl sm:text-3xl md:text-4xl font-black tracking-tight ${
-                isLightMode ? 'text-slate-900' : 'text-white'
-              }`}>
-                Scan QR or Visit Link to Join
-              </h2>
-
-              <div className="w-full pt-3">
-                <div className={`p-3 rounded-xl border text-sm sm:text-base md:text-lg font-bold truncate font-mono shadow-inner transition-all ${
-                  isLightMode 
-                    ? 'bg-slate-50 border-slate-300 text-indigo-950 font-black' 
-                    : 'bg-black/60 border-white/15 text-amber-300'
-                }`}>
-                  {eventUrl}
-                </div>
-              </div>
-            </div>
-
-            {/* Right QR Code */}
+            {/* Centered QR Code */}
             <div className="flex flex-col items-center justify-center">
               <div className={`p-4 md:p-5 rounded-3xl border-4 transition-all ${
                 isLightMode 
@@ -550,9 +523,18 @@ export default function ProjectorView() {
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(eventUrl)}&margin=4`} 
                   alt="Scan to Join Event" 
-                  className="w-40 h-40 md:w-48 md:h-48 object-contain"
+                  className="w-48 h-48 md:w-56 md:h-56 object-contain"
                 />
               </div>
+            </div>
+
+            {/* Below QR: Instructions / Line Text */}
+            <div className="flex flex-col items-center text-center space-y-1">
+              <h2 className={`text-2xl sm:text-3xl md:text-4xl font-black tracking-tight ${
+                isLightMode ? 'text-slate-900' : 'text-white'
+              }`}>
+                Scan QR to Join
+              </h2>
             </div>
           </motion.div>
         </div>
@@ -885,14 +867,7 @@ export default function ProjectorView() {
                       ? 'bg-white/95 border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.06)]' 
                       : 'bg-slate-900/80 border-indigo-500/40'
                   }`}>
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full border text-[11px] font-bold uppercase tracking-wider mb-1 ${
-                      isLightMode 
-                        ? 'bg-cyan-50 border-cyan-300 text-cyan-800' 
-                        : 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300'
-                    }`}>
-                    { /* <ImageIcon className="w-3 h-3" /> */ }
-                      {/*<span>Visual Evidence Inspection</span>*/}
-                    </div>
+                   
                     <h1 className={`text-xl md:text-2xl lg:text-3xl font-black leading-tight ${
                       isLightMode ? 'text-slate-900' : 'text-white'
                     }`}>

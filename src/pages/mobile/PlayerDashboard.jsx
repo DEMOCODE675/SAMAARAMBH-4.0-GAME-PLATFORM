@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { AuthContext } from '../../context/AuthContext';
 import { GameContext } from '../../context/GameContext'; 
 import { db } from '../../config/firebase';
-import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, limit, getCountFromServer, where } from 'firebase/firestore';
 import PlayerRoundReview from './components/PlayerRoundReview';
 import { 
   Users, 
@@ -24,9 +24,11 @@ export default function PlayerDashboard({ onOpenTeam }) {
   const { gameState } = useContext(GameContext); 
   
   const [allPlayers, setAllPlayers] = useState([]);
+  const [totalContributors, setTotalContributors] = useState(0);
   const [myRank, setMyRank] = useState({ rank: '-', score: 0 });
 
   const [allTeams, setAllTeams] = useState([]);
+  const [totalTeamsCount, setTotalTeamsCount] = useState(0);
   const [myTeamRank, setMyTeamRank] = useState({ rank: '-', score: 0, teamName: '' });
   
   const [activeTab, setActiveTab] = useState('solo'); 
@@ -52,10 +54,15 @@ export default function PlayerDashboard({ onOpenTeam }) {
     });
   };
 
-  // 1. Real-time listener for top players (optimized to prevent quota avalanche)
+  // 1. Real-time listener for top players + lightweight count aggregation for exact rank & total
   useEffect(() => {
+    // 1a. Efficiently get total contributor count (costs only 1 read per 1,000 docs)
+    getCountFromServer(collection(db, 'players'))
+      .then(snap => setTotalContributors(snap.data().count))
+      .catch(err => console.warn("Player count error:", err));
+
     const q = query(collection(db, 'players'), orderBy('score', 'desc'), limit(50));
-    const unsubscribePlayers = onSnapshot(q, (snapshot) => {
+    const unsubscribePlayers = onSnapshot(q, async (snapshot) => {
       const playersList = [];
       snapshot.forEach((docSnap) => {
         playersList.push({ id: docSnap.id, ...docSnap.data() });
@@ -67,13 +74,27 @@ export default function PlayerDashboard({ onOpenTeam }) {
       if (index !== -1) {
         setMyRank({
           rank: index + 1,
-          score: playersList[index].score || player?.score || 0
+          score: playersList[index].score ?? player?.score ?? 0
         });
       } else {
-        setMyRank({
-          rank: '50+',
-          score: player?.score || 0
-        });
+        // Player is outside top 50: compute exact rank via lightweight count query (costs only 1 read!)
+        const myScore = player?.score || 0;
+        try {
+          const higherSnap = await getCountFromServer(
+            query(collection(db, 'players'), where('score', '>', myScore))
+          );
+          const higherCount = higherSnap.data().count;
+          setMyRank({
+            rank: higherCount + 1,
+            score: myScore
+          });
+        } catch (err) {
+          console.warn("Exact rank lookup error:", err);
+          setMyRank({
+            rank: `${playersList.length}+`,
+            score: myScore
+          });
+        }
       }
     }, (error) => {
       console.warn("Players listener error:", error.message);
@@ -82,10 +103,14 @@ export default function PlayerDashboard({ onOpenTeam }) {
     return () => unsubscribePlayers();
   }, [player?.pin, player?.score]);
 
-  // 2. Real-time listener for top teams (optimized)
+  // 2. Real-time listener for top teams + lightweight count aggregation
   useEffect(() => {
+    getCountFromServer(collection(db, 'events', 'samarambh', 'teams'))
+      .then(snap => setTotalTeamsCount(snap.data().count))
+      .catch(err => console.warn("Teams count error:", err));
+
     const qTeams = query(collection(db, 'events', 'samarambh', 'teams'), orderBy('totalScore', 'desc'), limit(50));
-    const unsubscribeTeams = onSnapshot(qTeams, (snapshot) => {
+    const unsubscribeTeams = onSnapshot(qTeams, async (snapshot) => {
       const teamsList = [];
       snapshot.forEach((docSnap) => {
         teamsList.push({ id: docSnap.id, ...docSnap.data() });
@@ -101,6 +126,22 @@ export default function PlayerDashboard({ onOpenTeam }) {
             score: teamsList[teamIndex].totalScore || 0,
             teamName: teamsList[teamIndex].teamName || 'Your Squad'
           });
+        } else {
+          try {
+            const teamDoc = teamsList.find(t => t.id === player.teamCode);
+            const myTeamScore = teamDoc?.totalScore || 0;
+            const higherSnap = await getCountFromServer(
+              query(collection(db, 'events', 'samarambh', 'teams'), where('totalScore', '>', myTeamScore))
+            );
+            const higherCount = higherSnap.data().count;
+            setMyTeamRank({
+              rank: higherCount + 1,
+              score: myTeamScore,
+              teamName: teamDoc?.teamName || 'Your Squad'
+            });
+          } catch (err) {
+            console.warn("Squad rank count error:", err);
+          }
         }
       }
     }, (error) => {
@@ -109,6 +150,10 @@ export default function PlayerDashboard({ onOpenTeam }) {
 
     return () => unsubscribeTeams();
   }, [player?.teamCode]);
+
+  // Compute verified total counts (lightweight fallback chain)
+  const displayTotalPlayers = Math.max(totalContributors, allPlayers.length, typeof myRank.rank === 'number' ? myRank.rank : 0);
+  const displayTotalTeams = Math.max(totalTeamsCount, allTeams.length, typeof myTeamRank.rank === 'number' ? myTeamRank.rank : 0);
 
   // Filtered lists: search ONLY by public names (Never search or reveal PINs)
   const filteredPlayers = useMemo(() => {
@@ -311,7 +356,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                   #{myRank.rank}
                 </span>
                 <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                  / {allPlayers.length || '-'}
+                  / {displayTotalPlayers || '-'}
                 </span>
               </div>
             </div>
@@ -352,7 +397,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                     #{myTeamRank.rank}
                   </span>
                   <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                    / {allTeams.length || '-'}
+                    / {displayTotalTeams || '-'}
                   </span>
                 </div>
               ) : (
@@ -392,7 +437,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                 }`}
               >
                 <User className="w-3.5 h-3.5" />
-                <span>Solo ({allPlayers.length})</span>
+                <span>Solo ({displayTotalPlayers})</span>
               </button>
 
               <button 
@@ -404,7 +449,7 @@ export default function PlayerDashboard({ onOpenTeam }) {
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />
-                <span>Squads ({allTeams.length})</span>
+                <span>Squads ({displayTotalTeams})</span>
               </button>
             </div>
 
@@ -544,6 +589,31 @@ export default function PlayerDashboard({ onOpenTeam }) {
                   )}
                 </div>
               </div>
+
+              {/* If player is outside top 50 list, display their pinned rank banner */}
+              {!allPlayers.some(p => p.pin === player?.pin) && player && myRank.rank !== '-' && (
+                <div className={`p-3.5 px-4 rounded-xl border flex items-center justify-between text-xs shadow-sm ${
+                  isDarkMode 
+                    ? 'bg-indigo-950/40 border-indigo-800/80 text-white' 
+                    : 'bg-indigo-50/90 border-indigo-200 text-indigo-950 font-medium'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <span className="font-extrabold text-sm text-indigo-400">#{myRank.rank}</span>
+                    <GlassAvatar name={player.name} seed={player.pin} size="sm" />
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold">{player.name}</span>
+                        <span className="text-[10px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded">YOU</span>
+                      </div>
+                     
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-extrabold text-emerald-500 text-sm">{myRank.score}</span>
+                    <span className="text-[10px] ml-1 text-slate-400">pts</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

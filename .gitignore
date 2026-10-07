@@ -28,3 +28,7 @@ dist-ssr
 .env.example
 firebase-applet-config.json
 .firebase-applet-config.json
+
+*test-bots.js
+.test-bots.js
+*.test-bots.js
