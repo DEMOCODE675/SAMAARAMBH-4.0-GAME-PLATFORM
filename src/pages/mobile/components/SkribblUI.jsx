@@ -21,8 +21,6 @@ import {
   Clock, 
   Lock, 
   Send, 
-  Sun, 
-  Moon, 
   Trophy, 
   AlertCircle 
 } from 'lucide-react';
@@ -49,17 +47,7 @@ export default function SkribblUI({ player, gameState, questionTimer: _parentTim
   const timeLimit = activeQ?.timeLimit || 75;
   const phase = gameState?.skribbl?.phase || 'drawing';
 
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('techarena_theme') === 'dark';
-  });
-
-  const toggleTheme = () => {
-    setIsDarkMode((prev) => {
-      const next = !prev;
-      localStorage.setItem('techarena_theme', next ? 'dark' : 'light');
-      return next;
-    });
-  };
+  const isDarkMode = false;
 
   // Synchronized countdown timer matching QuizUI / TerminalUI
   const [questionTimer, setQuestionTimer] = useState(timeLimit);
@@ -317,7 +305,7 @@ export default function SkribblUI({ player, gameState, questionTimer: _parentTim
               </div>
             </div>
 
-            {/* Timer Badge & Theme Switch */}
+            {/* Timer Badge */}
             <div className="flex items-center gap-2">
               <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-colors ${
                 isTimeCritical
@@ -332,17 +320,6 @@ export default function SkribblUI({ player, gameState, questionTimer: _parentTim
                 <span>{questionTimer}s</span>
               </div>
 
-              <button
-                onClick={toggleTheme}
-                className={`p-2 rounded-xl border transition-colors ${
-                  isDarkMode
-                    ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800'
-                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-                }`}
-                title="Toggle theme"
-              >
-                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
             </div>
           </div>
         </header>

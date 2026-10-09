@@ -14,10 +14,9 @@ import {
   LogOut, 
   Target, 
   ChevronRight,
-  Sun,
-  Moon
 } from 'lucide-react';
 import GlassAvatar from '../../components/GlassAvatar';
+import { SamaarambhBackground } from '../../components/SamaarambhTheme';
 
 export default function PlayerDashboard({ onOpenTeam }) {
   const { player, logout } = useContext(AuthContext);
@@ -39,20 +38,11 @@ export default function PlayerDashboard({ onOpenTeam }) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Theme state: defaults to comfortable eye-friendly Light mode
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('techarena_theme') === 'dark';
-  });
+  const isDarkMode = false;
 
   const myPlayerRowRef = useRef(null);
   const canDisconnect = gameState?.allowDisconnect !== false;
 
-  const toggleTheme = () => {
-    setIsDarkMode((prev) => {
-      const next = !prev;
-      localStorage.setItem('techarena_theme', next ? 'dark' : 'light');
-      return next;
-    });
-  };
 
   // 1. Real-time listener for top players + lightweight count aggregation for exact rank & total
   useEffect(() => {
@@ -186,28 +176,31 @@ export default function PlayerDashboard({ onOpenTeam }) {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${
-      isDarkMode 
-        ? 'bg-[#0b0f19] text-slate-100 selection:bg-indigo-500 selection:text-white' 
-        : 'bg-slate-50 text-slate-900 selection:bg-indigo-200 selection:text-indigo-900'
-    }`}>
+    <div className="min-h-screen relative text-slate-900 selection:bg-indigo-200 selection:text-indigo-900">
       
-      {/* Subtle, eye-friendly ambient background glow */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className={`absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-30 transition-opacity ${
-          isDarkMode ? 'bg-indigo-900/30' : 'bg-indigo-200/40'
-        }`} />
-        <div className={`absolute bottom-0 left-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-30 transition-opacity ${
-          isDarkMode ? 'bg-emerald-900/20' : 'bg-emerald-100/50'
-        }`} />
+      {/* 3-Band Event Background Layer (Fixed behind the dashboard) */}
+      <SamaarambhBackground isFixed={true} />
+
+      {/* Left Mascot Sticker: Standing Student Presenting Leaderboard (Only on laptop/desktop in side margin) */}
+      <div className="hidden xl:block fixed left-2 2xl:left-12 bottom-6 z-20 pointer-events-none select-none">
+        <img 
+          src="/images/Theme_Samaarambh 4.O (8).png"
+          alt="Samaarambh Host"
+          className="h-[40vh] 2xl:h-[48vh] max-h-[440px] w-auto object-contain object-bottom drop-shadow-2xl"
+        />
       </div>
 
-      {/* TOP HEADER BAR */}
-      <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 py-3 md:px-8 transition-colors ${
-        isDarkMode 
-          ? 'bg-[#0b0f19]/85 border-slate-800' 
-          : 'bg-white/85 border-slate-200/80 shadow-sm'
-      }`}>
+      {/* Right Mascot Sticker: Welcoming Presenter Host (Only on laptop/desktop in side margin) */}
+      <div className="hidden xl:block fixed right-2 2xl:right-12 bottom-6 z-20 pointer-events-none select-none">
+        <img 
+          src="/images/Theme_Samaarambh 4.O (9).png"
+          alt="Samaarambh Presenter"
+          className="h-[40vh] 2xl:h-[48vh] max-h-[440px] w-auto object-contain object-bottom drop-shadow-2xl"
+        />
+      </div>
+
+      {/* TOP HEADER BAR (STUCK TO TOP) */}
+      <header className="fixed top-0 left-0 right-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-sm px-4 py-3 md:px-8 transition-all">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
           
           {/* Top-Left: Logo & App Title */}
@@ -216,16 +209,12 @@ export default function PlayerDashboard({ onOpenTeam }) {
               src="/images/logo.jpg" 
               onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
               alt="MLSAMIET Logo" 
-              className={`h-10 w-10 md:h-11 md:w-11 rounded-xl object-contain p-1 border shadow-sm transition-all ${
-                isDarkMode 
-                  ? 'bg-slate-900 border-slate-800' 
-                  : 'bg-white border-slate-200'
-              }`}
+              className="h-10 w-10 md:h-11 md:w-11 rounded-xl object-contain p-1 border shadow-sm bg-white border-slate-200 transition-all"
             />
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-sm md:text-base tracking-tight">
-                  MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
+                  MLSA<span className="text-indigo-600">MIET</span>
                 </span>
               </div>
             </div>
@@ -236,25 +225,19 @@ export default function PlayerDashboard({ onOpenTeam }) {
             
             {/* Login PIN Chip: Always visible */}
             <div 
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-mono transition-colors ${
-                isDarkMode 
-                  ? 'bg-slate-900 border-slate-800 text-slate-200' 
-                  : 'bg-slate-100 border-slate-200 text-slate-700'
-              }`}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-mono bg-slate-100 border-slate-200 text-slate-700 transition-colors"
               title="Your personal login PIN"
             >
-              <span className={`text-[10px] uppercase font-sans font-semibold hidden sm:inline ${
-                isDarkMode ? 'text-slate-400' : 'text-slate-500'
-              }`}>
-              Login PIN
+              <span className="text-[10px] uppercase font-sans font-semibold hidden sm:inline text-slate-500">
+                Login PIN
               </span>
-              <span className="font-bold tracking-widest text-indigo-600 dark:text-indigo-400 font-mono">
+              <span className="font-bold tracking-widest text-indigo-600 font-mono">
                 {player?.pin || '----'}
               </span>
 
               <button 
                 onClick={handleCopyPin}
-                className="p-1 hover:text-indigo-600 dark:hover:text-indigo-400 text-slate-400 transition-colors"
+                className="p-1 hover:text-indigo-600 text-slate-400 transition-colors"
                 title="Copy my PIN"
               >
                 {copiedPin ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
@@ -272,28 +255,11 @@ export default function PlayerDashboard({ onOpenTeam }) {
               </span>
             </button>
 
-            {/* Light / Dark Mode Toggle */}
-            <button
-              onClick={toggleTheme}
-              className={`p-2 rounded-xl border transition-colors ${
-                isDarkMode 
-                  ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-                  : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-              }`}
-              title={isDarkMode ? "Switch to comfortable Light mode" : "Switch to Dark mode"}
-            >
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-
             {/* Disconnect Option */}
             {canDisconnect && (
               <button 
                 onClick={() => setShowLogoutModal(true)}
-                className={`p-2 rounded-xl border transition-colors ${
-                  isDarkMode 
-                    ? 'border-transparent text-slate-400 hover:text-red-400 hover:bg-red-950/20' 
-                    : 'border-transparent text-slate-400 hover:text-red-600 hover:bg-red-50'
-                }`}
+                className="p-2 rounded-xl border transition-colors border-transparent text-slate-400 hover:text-red-600 hover:bg-red-50"
                 title="Disconnect"
               >
                 <LogOut className="w-4 h-4" />
@@ -303,11 +269,14 @@ export default function PlayerDashboard({ onOpenTeam }) {
         </div>
       </header>
 
+      {/* Spacer to prevent content from going behind fixed header */}
+      <div className="h-[65px] md:h-[69px] w-full shrink-0" aria-hidden="true" />
+
       {/* MAIN CONTAINER */}
       <main className="relative max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-6">
         
         {/* HERO PROFILE & SUMMARY CARD */}
-        <section className={`rounded-2xl p-5 md:p-6 border transition-all ${
+        <section className={`rounded-2xl p-4 sm:p-5 md:p-6 border transition-all ${
           isDarkMode 
             ? 'bg-slate-900/60 border-slate-800' 
             : 'bg-white border-slate-200/80 shadow-sm'
@@ -327,83 +296,72 @@ export default function PlayerDashboard({ onOpenTeam }) {
                   <h1 className="text-xl md:text-2xl font-bold tracking-tight">
                     {player?.name || 'Player'}
                   </h1>
-                 { /*<span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                    {player?.teamCode ? 'Squad' : 'Solo'}
-                  </span> */}
                 </div>
-               { /*p className={`text-xs mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {player?.teamCode ? `Squad: ${myTeamRank.teamName}` : 'Not in a Squad'}
-                </p> */}
               </div>
             </div>
           </div>
 
           {/* 3 CLEAN METRIC CARDS */}
-          <div className="grid grid-cols-3 gap-3 md:gap-4 mt-5">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 mt-4 sm:mt-5">
             
             {/* 1. Solo Rank */}
-            <div className={`p-3.5 md:p-4 rounded-xl border transition-all ${
+            <div className={`p-2.5 sm:p-3.5 md:p-4 rounded-xl sm:rounded-2xl border transition-all flex flex-col justify-between min-w-0 ${
               isDarkMode 
                 ? 'bg-slate-950/40 border-slate-800' 
                 : 'bg-slate-50 border-slate-200/80 hover:border-indigo-300'
             }`}>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Solo Rank</span>
-                { /*<Trophy className="w-4 h-4 text-amber-500" /> */}
+                <span className={`text-[11px] sm:text-xs font-medium truncate ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Solo Rank</span>
               </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl md:text-3xl font-extrabold tracking-tight">
-                  #{myRank.rank}
+              <div className="flex items-baseline gap-1 flex-wrap sm:flex-nowrap min-w-0">
+                <span className="text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight leading-none">
+                  {myRank.rank !== '-' ? `#${myRank.rank}` : '-'}
                 </span>
-                <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                <span className={`text-[10px] sm:text-xs font-medium whitespace-nowrap ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                   / {displayTotalPlayers || '-'}
                 </span>
               </div>
             </div>
 
             {/* 2. Total Points */}
-            <div className={`p-3.5 md:p-4 rounded-xl border transition-all ${
+            <div className={`p-2.5 sm:p-3.5 md:p-4 rounded-xl sm:rounded-2xl border transition-all flex flex-col justify-between min-w-0 ${
               isDarkMode 
                 ? 'bg-slate-950/40 border-slate-800' 
                 : 'bg-slate-50 border-slate-200/80 hover:border-emerald-300'
             }`}>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Score</span>
-                
+                <span className={`text-[11px] sm:text-xs font-medium truncate ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Score</span>
               </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">
+              <div className="flex items-baseline gap-1 min-w-0">
+                <span className="text-lg sm:text-2xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight leading-none">
                   {myRank.score}
                 </span>
-                <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>pts</span>
+                <span className={`text-[10px] sm:text-xs font-medium whitespace-nowrap ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>pts</span>
               </div>
             </div>
 
             {/* 3. Squad Status */}
-            <div className={`p-3.5 md:p-4 rounded-xl border transition-all ${
+            <div className={`p-2.5 sm:p-3.5 md:p-4 rounded-xl sm:rounded-2xl border transition-all flex flex-col justify-between min-w-0 ${
               isDarkMode 
                 ? 'bg-slate-950/40 border-slate-800' 
                 : 'bg-slate-50 border-slate-200/80 hover:border-indigo-300'
             }`}>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Squad Rank</span>
-                {
-                  
-                }
+                <span className={`text-[11px] sm:text-xs font-medium truncate ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Squad Rank</span>
               </div>
               {player?.teamCode ? (
-                <div className="flex items-baseline gap-1">
-                  <span className="text-xl md:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight">
-                    #{myTeamRank.rank}
+                <div className="flex items-baseline gap-1 flex-wrap sm:flex-nowrap min-w-0">
+                  <span className="text-lg sm:text-2xl md:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight leading-none">
+                    {myTeamRank.rank !== '-' ? `#${myTeamRank.rank}` : '-'}
                   </span>
-                  <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <span className={`text-[10px] sm:text-xs font-medium whitespace-nowrap ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                     / {displayTotalTeams || '-'}
                   </span>
                 </div>
               ) : (
                 <button 
                   onClick={onOpenTeam}
-                  className="flex items-center gap-1 text-xs md:text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline mt-1"
+                  className="flex items-center gap-1 text-xs md:text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline mt-0.5"
                 >
                   <span>Join</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -747,15 +705,30 @@ export default function PlayerDashboard({ onOpenTeam }) {
 
       {/* DISCONNECT CONFIRMATION MODAL */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className={`border rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-xl ${
-            isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-          }`}>
+        <div 
+          onClick={() => setShowLogoutModal(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className={`relative border rounded-2xl max-w-sm w-full p-6 pt-7 text-center space-y-4 shadow-2xl transition-all ${
+              isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+            }`}
+          >
+            {/* 10th Mascot Sticker perched on top of modal */}
+            <div className="absolute -top-24 sm:-top-28 left-1/2 -translate-x-1/2 pointer-events-none select-none z-10">
+              <img 
+                src="/images/Theme_Samaarambh 4.O (10).png" 
+                alt="Student Mascot" 
+                className="w-28 h-28 sm:w-32 sm:h-32 object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.22)]"
+              />
+            </div>
+
             <div className="w-11 h-11 rounded-full bg-red-500/10 text-red-600 flex items-center justify-center mx-auto">
               <LogOut className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold">Disconnect Session?</h3>
+              <h3 className="text-base font-bold text-slate-900">Disconnect Session?</h3>
               <p className={`text-xs mt-1 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 Your score and rank are saved under your <span className="font-bold text-indigo-600 dark:text-indigo-400">Login PIN</span>. You can reconnect anytime with your Login PIN to continue competing. Disconnecting will log-out of this session.
               </p>

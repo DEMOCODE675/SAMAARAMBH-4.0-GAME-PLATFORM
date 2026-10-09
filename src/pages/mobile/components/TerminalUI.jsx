@@ -8,8 +8,6 @@ import {
   Clock, 
   Terminal, 
   Lock,
-  Sun, 
-  Moon, 
   Send, 
   CornerDownLeft, 
   AlertCircle 
@@ -32,17 +30,7 @@ export default function TerminalUI({ payload, setHasSubmitted: setParentSubmitte
   const [lockedAnswer, setLockedAnswer] = useState(null);
   const inputRef = useRef(null);
 
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('techarena_theme') === 'dark';
-  });
-
-  const toggleTheme = () => {
-    setIsDarkMode(prev => {
-      const next = !prev;
-      localStorage.setItem('techarena_theme', next ? 'dark' : 'light');
-      return next;
-    });
-  };
+  const isDarkMode = false;
 
   const totalTimeLimit = gameState?.activeQuestion?.timeLimit || 25;
   const [setupCountdown, setSetupCountdown] = useState(5);
@@ -207,7 +195,6 @@ export default function TerminalUI({ payload, setHasSubmitted: setParentSubmitte
         maxSeconds={5}
         mode="mobile"
         isDarkMode={isDarkMode}
-        onToggleTheme={toggleTheme}
         badgeText="Spawning Shell Environment"
         title="Terminal Readying"
         subtitle="Prepare to inspect the log output and execute the right bash command syntax."
@@ -238,17 +225,6 @@ export default function TerminalUI({ payload, setHasSubmitted: setParentSubmitte
             </span>
           </div>
 
-          <button
-            onClick={toggleTheme}
-            className={`p-2 rounded-xl border transition-colors ${
-              isDarkMode 
-                ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-            }`}
-            title="Toggle theme"
-          >
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
         </div>
 
         {/* Center Lock Card */}
@@ -369,17 +345,6 @@ export default function TerminalUI({ payload, setHasSubmitted: setParentSubmitte
               <span>{questionTimer}s</span>
             </div>
 
-            <button
-              onClick={toggleTheme}
-              className={`p-2 rounded-xl border transition-colors ${
-                isDarkMode 
-                  ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-              }`}
-              title="Toggle theme"
-            >
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
           </div>
         </div>
       </header>

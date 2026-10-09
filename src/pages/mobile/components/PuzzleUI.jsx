@@ -5,8 +5,6 @@ import { submitAnswerRecord } from '../../../utils/offlineSync';
 import { 
   Clock, 
   Lock,
-  Sun, 
-  Moon, 
   Send 
 } from 'lucide-react';
 import StageCountdown from '../../../components/StageCountdown';
@@ -23,17 +21,7 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lockedAnswer, setLockedAnswer] = useState(null);
 
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('techarena_theme') === 'dark';
-  });
-
-  const toggleTheme = () => {
-    setIsDarkMode(prev => {
-      const next = !prev;
-      localStorage.setItem('techarena_theme', next ? 'dark' : 'light');
-      return next;
-    });
-  };
+  const isDarkMode = false;
 
   const payload = gameState?.activeQuestion?.payload || {};
   const totalTimeLimit = gameState?.activeQuestion?.timeLimit || 25;
@@ -177,7 +165,6 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
         maxSeconds={5}
         mode="mobile"
         isDarkMode={isDarkMode}
-        onToggleTheme={toggleTheme}
         badgeText="Puzzle Decrypting"
         title="Get Ready to Solve!"
         subtitle="Analyze the riddle carefully and enter your solution before the timer runs out."
@@ -208,17 +195,6 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
             </span>
           </div>
 
-          <button
-            onClick={toggleTheme}
-            className={`p-2 rounded-xl border transition-colors ${
-              isDarkMode 
-                ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-            }`}
-            title="Toggle theme"
-          >
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
         </div>
 
         {/* Center Lock Card */}
@@ -339,17 +315,6 @@ export default function PuzzleUI({ player, gameState, setHasSubmitted: setParent
               <span>{questionTimer}s</span>
             </div>
 
-            <button
-              onClick={toggleTheme}
-              className={`p-2 rounded-xl border transition-colors ${
-                isDarkMode 
-                  ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-              }`}
-              title="Toggle theme"
-            >
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
           </div>
         </div>
       </header>

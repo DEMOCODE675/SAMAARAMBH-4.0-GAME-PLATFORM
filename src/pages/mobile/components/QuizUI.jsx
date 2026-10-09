@@ -8,8 +8,6 @@ import {
   Check, 
   Clock, 
   Lock, 
-  Sun, 
-  Moon, 
   Zap, 
   AlertCircle 
 } from 'lucide-react';
@@ -59,17 +57,7 @@ export default function QuizUI({ payload, setHasSubmitted: setParentSubmitted })
   const [questionStartTime, setQuestionStartTime] = useState(null);
 
   // Eye-friendly theme preference
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('techarena_theme') === 'dark';
-  });
-
-  const toggleTheme = () => {
-    setIsDarkMode(prev => {
-      const next = !prev;
-      localStorage.setItem('techarena_theme', next ? 'dark' : 'light');
-      return next;
-    });
-  };
+  const isDarkMode = false;
 
   const totalTimeLimit = gameState?.activeQuestion?.timeLimit || 20;
   const [setupCountdown, setSetupCountdown] = useState(5);
@@ -240,7 +228,6 @@ export default function QuizUI({ payload, setHasSubmitted: setParentSubmitted })
         maxSeconds={5}
         mode="mobile"
         isDarkMode={isDarkMode}
-        onToggleTheme={toggleTheme}
         badgeText="Next Question Starting"
         title="Get Ready!"
         subtitle="Prepare to choose your answer quickly. Accuracy and speed determine your points!"
@@ -272,17 +259,6 @@ export default function QuizUI({ payload, setHasSubmitted: setParentSubmitted })
             </span>
           </div>
 
-          <button
-            onClick={toggleTheme}
-            className={`p-2 rounded-xl border transition-colors ${
-              isDarkMode 
-                ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-            }`}
-            title="Toggle theme"
-          >
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
         </div>
 
         {/* Center Lock Card */}
@@ -394,7 +370,7 @@ export default function QuizUI({ payload, setHasSubmitted: setParentSubmitted })
             </div>
           </div>
 
-          {/* Timer Badge & Theme Switch */}
+          {/* Timer Badge */}
           <div className="flex items-center gap-2">
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-colors ${
               isTimeCritical 
@@ -409,17 +385,6 @@ export default function QuizUI({ payload, setHasSubmitted: setParentSubmitted })
               <span>{questionTimer}s</span>
             </div>
 
-            <button
-              onClick={toggleTheme}
-              className={`p-2 rounded-xl border transition-colors ${
-                isDarkMode 
-                  ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-              }`}
-              title="Toggle theme"
-            >
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
           </div>
         </div>
       </header>

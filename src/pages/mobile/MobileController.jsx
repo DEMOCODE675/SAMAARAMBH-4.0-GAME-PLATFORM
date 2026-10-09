@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { GameContext } from '../../context/GameContext'; 
-import { Lock, Sun, Moon } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 // Import our Views
 import PlayerLogin from './PlayerLogin';
@@ -14,17 +14,7 @@ import PuzzleUI from './components/PuzzleUI';
 import SkribblUI from './components/SkribblUI';
 
 function LockedFallbackView() {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('techarena_theme') === 'dark';
-  });
-
-  const toggleTheme = () => {
-    setIsDarkMode(prev => {
-      const next = !prev;
-      localStorage.setItem('techarena_theme', next ? 'dark' : 'light');
-      return next;
-    });
-  };
+  const isDarkMode = false;
 
   return (
     <div className={`min-h-screen flex flex-col justify-between p-6 transition-colors duration-200 ${
@@ -46,17 +36,6 @@ function LockedFallbackView() {
           </span>
         </div>
 
-        <button
-          onClick={toggleTheme}
-          className={`p-2 rounded-xl border transition-colors ${
-            isDarkMode 
-              ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-          }`}
-          title="Toggle theme"
-        >
-          {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
       </div>
 
       {/* Center Lock Card */}
