@@ -148,7 +148,7 @@ export default function SkribblUI({ player, gameState, questionTimer: _parentTim
       const answerData = {
         questionId: roundId,
         questionType: 'skribbl',
-        questionText: `🎨 Skribbl Round ${activeQ?.roundIndex || '1'}: Word Drawing`,
+        questionText: `Skribbl Round ${activeQ?.roundIndex || '1'}: Word Drawing`,
         submittedAnswer: text,
         answer: text,
         isCorrect: true,
@@ -175,7 +175,7 @@ export default function SkribblUI({ player, gameState, questionTimer: _parentTim
         gameMode: gameState?.gameMode || 'solo',
         questionId: roundId,
         questionType: 'skribbl',
-        questionText: `🎨 Skribbl Round ${activeQ?.roundIndex || '1'}: Word Drawing`,
+        questionText: `Skribbl Round ${activeQ?.roundIndex || '1'}: Word Drawing`,
         submittedAnswer: text,
         answer: text,
         isCorrect: true,
