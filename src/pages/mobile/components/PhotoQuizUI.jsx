@@ -612,15 +612,15 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
             {isSubmitting ? (
               <>
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Recording Verdict...</span>
+                <span>Recording Option...</span>
               </>
             ) : selected ? (
               <>
                 <Lock className="w-4 h-4" />
-                <span>Lock In Verdict</span>
+                <span>Lock Option</span>
               </>
             ) : (
-              <span>Choose Verdict to Submit</span>
+              <span>Choose Option to Submit</span>
             )}
           </button>
         </div>

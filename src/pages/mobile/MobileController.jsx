@@ -238,7 +238,7 @@ export default function MobileController() {
       {!isOnline && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-slate-950 font-bold text-xs py-1.5 px-4 text-center flex items-center justify-center gap-2 shadow-md">
           <span className="w-2 h-2 rounded-full bg-slate-950 animate-ping" />
-          <span>Offline Mode Active: Your answers are saved locally and will auto-sync when network returns!</span>
+          <span>Offline Mode Active: Your answers are saved and we will back up when network returns!</span>
         </div>
       )}
       {currentView === 'team' ? (
