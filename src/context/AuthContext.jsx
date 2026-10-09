@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import { auth, db } from '../config/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { SamaarambhBackground } from '../components/SamaarambhTheme';
 
 export const AuthContext = createContext();
 
@@ -156,10 +157,31 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{ player, loading, registerNewPlayer, signInWithPin, logout }}>
       {loading ? (
-        <div className="min-h-screen bg-[#080c16] flex items-center justify-center p-6 text-center select-none">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-9 h-9 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-            <span className="text-xs font-mono uppercase tracking-widest text-slate-400">Connecting to Arena...</span>
+        <div className="min-h-screen h-[100dvh] relative overflow-hidden flex items-center justify-center p-6 text-center select-none bg-[#fbe99f] text-slate-900 font-sans">
+          <SamaarambhBackground isFixed={true} />
+
+          {/* Left Mascot Sticker */}
+          <img
+            src="/images/Theme_Samaarambh 4.O (1).png"
+            alt=""
+            className="absolute bottom-0 left-0 sm:left-2 md:left-6 lg:left-12 z-0 h-[14vh] sm:h-[30vh] md:h-[40vh] lg:h-[46vh] max-h-[105px] sm:max-h-[220px] md:max-h-[380px] lg:max-h-[440px] w-auto object-contain object-bottom pointer-events-none select-none drop-shadow-xl"
+          />
+
+          {/* Right Mascot Sticker */}
+          <img
+            src="/images/Theme_Samaarambh 4.O.png"
+            alt=""
+            className="absolute bottom-0 right-0 sm:right-2 md:right-6 lg:right-12 z-0 h-[14vh] sm:h-[30vh] md:h-[40vh] lg:h-[46vh] max-h-[105px] sm:max-h-[220px] md:max-h-[380px] lg:max-h-[440px] w-auto object-contain object-bottom pointer-events-none select-none drop-shadow-xl"
+          />
+
+          {/* Center Loading Card */}
+          <div className="relative z-10 flex flex-col items-center gap-3 p-6 sm:p-8 rounded-3xl bg-white/95 border-2 border-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-w-xs sm:max-w-sm w-full mx-auto">
+            <div className="w-10 h-10 border-3 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
+            <div className="space-y-1">
+              <h3 className="font-extrabold text-sm sm:text-base tracking-tight text-slate-900">
+                Connecting to Arena...
+              </h3>
+            </div>
           </div>
         </div>
       ) : children}

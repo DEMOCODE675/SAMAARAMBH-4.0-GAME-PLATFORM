@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon, Clock, Sparkles } from 'lucide-react';
+import { Clock, Sparkles } from 'lucide-react';
 
 /**
  * StageCountdown - High impact, modern, cinematic countdown component
@@ -12,8 +12,7 @@ export default function StageCountdown({
   maxSeconds = 5,
   mode,
   isProjector = false,
-  isDarkMode = true,
-  onToggleTheme,
+  isDarkMode = false,
   badgeText = 'Incoming Arena Challenge',
   title,
   subtitle = 'Prepare to choose your answer quickly. Speed and precision yield peak multipliers.',
@@ -124,19 +123,6 @@ export default function StageCountdown({
           </div>
         </div>
 
-        {onToggleTheme && (
-          <button
-            onClick={onToggleTheme}
-            className={`p-2 rounded-xl border transition-colors ${
-              isDarkMode 
-                ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-            }`}
-            title="Toggle theme"
-          >
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-        )}
       </div>
 
       {/* Center Countdown Meter */}

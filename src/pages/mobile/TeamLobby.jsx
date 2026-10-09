@@ -11,8 +11,6 @@ import {
   Crown, 
   Copy, 
   Check, 
-  Sun, 
-  Moon,
   Clock,
   LogOut
 } from 'lucide-react';
@@ -32,17 +30,7 @@ export default function TeamLobby({ onBack }) {
   const [activeTeam, setActiveTeam] = useState(null);
   const [roster, setRoster] = useState([]);
 
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('techarena_theme') === 'dark';
-  });
-
-  const toggleTheme = () => {
-    setIsDarkMode(prev => {
-      const next = !prev;
-      localStorage.setItem('techarena_theme', next ? 'dark' : 'light');
-      return next;
-    });
-  };
+  const isDarkMode = false;
 
   // Listen for team updates if the player is in a team
   useEffect(() => {
@@ -181,17 +169,6 @@ export default function TeamLobby({ onBack }) {
             <span>Dashboard</span>
           </button>
 
-          <button
-            onClick={toggleTheme}
-            className={`p-2 rounded-xl border transition-colors ${
-              isDarkMode 
-                ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-            }`}
-            title="Toggle theme"
-          >
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
         </div>
 
         {/* Center Squad Lobby Content */}
@@ -325,17 +302,6 @@ export default function TeamLobby({ onBack }) {
           <span>Dashboard</span>
         </button>
 
-        <button
-          onClick={toggleTheme}
-          className={`p-2 rounded-xl border transition-colors ${
-            isDarkMode 
-              ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-          }`}
-          title="Toggle theme"
-        >
-          {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
       </div>
 
       {/* Main Team Card */}

@@ -6,8 +6,6 @@ import {
   Check, 
   Clock, 
   Lock, 
-  Sun, 
-  Moon, 
   Maximize2, 
   X, 
   AlertCircle,
@@ -107,17 +105,7 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
   const [questionStartTime, setQuestionStartTime] = useState(null);
 
   // Eye-friendly theme
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('techarena_theme') === 'dark';
-  });
-
-  const toggleTheme = () => {
-    setIsDarkMode(prev => {
-      const next = !prev;
-      localStorage.setItem('techarena_theme', next ? 'dark' : 'light');
-      return next;
-    });
-  };
+  const isDarkMode = false;
 
   const payload = gameState?.activeQuestion?.payload || {};
   const questionId = gameState?.activeQuestion?.id;
@@ -304,7 +292,6 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
         maxSeconds={5}
         mode="mobile"
         isDarkMode={isDarkMode}
-        onToggleTheme={toggleTheme}
         badgeText="Visual Loading"
         title="Visual Threat Analysis"
         subtitle="Carefully review the screenshot or image artifacts to determine the verdict."
@@ -335,17 +322,6 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
             </span>
           </div>
 
-          <button
-            onClick={toggleTheme}
-            className={`p-2 rounded-xl border transition-colors ${
-              isDarkMode 
-                ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-            }`}
-            title="Toggle theme"
-          >
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
         </div>
 
         {/* Center Lock Card */}
@@ -466,17 +442,6 @@ export default function PhotoQuizUI({ player, gameState, setHasSubmitted: setPar
               <span>{questionTimer}s</span>
             </div>
 
-            <button
-              onClick={toggleTheme}
-              className={`p-2 rounded-xl border transition-colors ${
-                isDarkMode 
-                  ? 'bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-              }`}
-              title="Toggle theme"
-            >
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
           </div>
         </div>
       </header>

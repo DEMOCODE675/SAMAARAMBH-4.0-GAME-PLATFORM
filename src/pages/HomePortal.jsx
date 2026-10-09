@@ -1,177 +1,102 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Smartphone, 
-  ArrowUpRight, 
-  Sun, 
-  Moon
+  ArrowUpRight 
 } from 'lucide-react';
+import { 
+  SamaarambhBackground, 
+  SamaarambhMascots, 
+  SamaarambhHeroTitle 
+} from '../components/SamaarambhTheme';
 
 export default function HomePortal() {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('techarena_theme') !== 'light';
-  });
-
-  const toggleTheme = () => {
-    setIsDarkMode((prev) => {
-      const next = !prev;
-      localStorage.setItem('techarena_theme', next ? 'dark' : 'light');
-      return next;
-    });
-  };
-
-  const portals = [
-    {
-      to: '/play',
-      badge: 'Contestant Room',
-      title: 'Player Controller',
-      actionLabel: 'Enter Arena',
-      icon: Smartphone,
-      accent: {
-        glow: 'from-indigo-600/20 via-blue-500/10 to-transparent',
-        border: 'group-hover:border-indigo-500/60 dark:group-hover:border-indigo-400/60',
-        badgeBg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
-        iconBg: 'bg-indigo-600 text-white shadow-indigo-600/30',
-        button: 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 group-hover:translate-x-0.5'
-      }
-    },
-  ];
-
   return (
-    <div className={`min-h-screen flex flex-col justify-between transition-colors duration-200 ${
-      isDarkMode ? 'bg-[#080c16] text-white selection:bg-indigo-500/30' : 'bg-slate-50 text-slate-900 selection:bg-indigo-200'
-    }`}>
-      {/* Subtle Background Radial Glow */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] rounded-full blur-[120px] opacity-35 transition-colors ${
-          isDarkMode ? 'bg-gradient-to-r from-indigo-700 via-rose-600 to-amber-600' : 'bg-gradient-to-r from-indigo-200 via-purple-100 to-amber-100'
-        }`} />
-      </div>
+    <div className="h-screen h-[100dvh] max-h-[100dvh] w-full overflow-hidden flex flex-col justify-between items-center select-none relative font-sans p-2 sm:p-4 md:p-6 bg-[#fbe99f] text-slate-900">
+      {/* 3-Band Background Layer with decorative clouds, sparkles, confetti */}
+      <SamaarambhBackground />
 
-      {/* Top Navigation */}
-      <header className="relative z-10 w-full max-w-6xl mx-auto px-6 pt-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      {/* Top Header Navigation (OUTSIDE the white card, on top light-red band) */}
+      <header className="relative z-20 w-[90%] sm:w-[88%] md:w-[86%] lg:w-[84%] max-w-5xl lg:max-w-6xl xl:max-w-7xl flex items-center justify-between shrink-0 px-2 pt-1 pb-1 sm:pb-2">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           <img 
             src="/images/logo.jpg" 
             onError={(e) => { e.currentTarget.src = '/logo.jpg'; }}
             alt="Logo" 
-            className={`h-10 w-10 rounded-2xl object-contain p-1 border shadow-sm ${
-              isDarkMode ? 'bg-slate-900 border-slate-800 shadow-black/40' : 'bg-white border-slate-200 shadow-slate-200'
-            }`}
+            className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl object-contain p-1 bg-white border border-slate-200/60 shadow-md"
           />
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-black text-lg tracking-tight">
-                MLSA<span className="text-indigo-600 dark:text-indigo-400">MIET</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          
-
-          <button
-            onClick={toggleTheme}
-            className={`p-2.5 rounded-2xl border transition-all ${
-              isDarkMode 
-                ? 'bg-slate-900/90 border-slate-800 text-amber-400 hover:bg-slate-800' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm'
-            }`}
-            title="Toggle theme"
-          >
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+          <span className="font-black text-base sm:text-lg tracking-tight text-white drop-shadow-sm">
+            MLSA<span className="text-amber-200">MIET</span>
+          </span>
         </div>
       </header>
 
-      {/* Main Hero & Portal Grid */}
-      <main className="relative z-10 w-full max-w-6xl mx-auto px-6 py-8 md:py-12 my-auto">
-        <div className="relative mx-auto mb-12 max-w-5xl text-center md:mb-16">
-          <div className="pointer-events-none absolute -left-16 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-indigo-400/20 blur-3xl" />
-          <div className="pointer-events-none absolute -right-16 top-0 h-40 w-40 rounded-full bg-blue-300/30 blur-3xl" />
-          <div className="relative">
-            <h2 className={`whitespace-nowrap bg-gradient-to-r bg-clip-text text-[clamp(2rem,9vw,7rem)] font-black leading-[0.9] tracking-tight text-transparent ${
-              isDarkMode ? 'from-slate-100 via-indigo-300 to-indigo-400' : 'from-[#111936] via-indigo-800 to-[#4338ca]'
-            }`}>
-              SAMARAMBH 4.0
-            </h2>
-          { /* <h1 className="mt-5 text-[clamp(1.5rem,4vw,3.5rem)] font-black leading-none tracking-tight text-[#111936] sm:mt-6">
-              Step In. Gear Up.<span className="text-indigo-600"> Game On</span>
-            </h1> */}
-          </div>
+      {/* Framed Center Card: Grand & Wide on laptop, margins on phone, 100% zero scroll */}
+      <div className="relative flex-1 w-[90%] sm:w-[88%] md:w-[86%] lg:w-[84%] max-w-5xl lg:max-w-6xl xl:max-w-7xl rounded-[2.2rem] sm:rounded-[2.8rem] md:rounded-[3.2rem] border-2 sm:border-[3px] border-slate-900 bg-white text-slate-900 shadow-[0_25px_60px_rgba(0,0,0,0.18)] flex flex-col justify-between overflow-hidden z-10 my-1 sm:my-2 px-4 py-3 sm:py-5 md:py-6">
+        {/* Top: SAMAARAMBH 4.0 Hero Title with Sparkles */}
+        <div className="relative z-20 pt-1 sm:pt-2 md:pt-4 px-4 text-center shrink-0">
+          <SamaarambhHeroTitle className="text-[clamp(1.6rem,4.5vw,3.6rem)]" />
         </div>
 
-        {/* Player Portal */}
-        <div className="flex justify-center">
-          {portals.map((portal, index) => {
-            const Icon = portal.icon;
+        {/* Center: The Single Player Controller Card */}
+        <div className="relative z-20 flex-1 flex items-center justify-center px-4 py-1.5 my-auto">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35 }}
+            className="w-full max-w-[270px] sm:max-w-[310px] md:max-w-[360px]"
+          >
+            <Link
+              to="/play"
+              className="group flex flex-col justify-between p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border-2 transition-all duration-300 relative overflow-hidden shadow-xl hover:shadow-2xl active:scale-[0.99] bg-white border-indigo-200 hover:border-indigo-400 shadow-indigo-100/80"
+            >
+              {/* Top Row: Icon & Badge */}
+              <div className="flex items-center justify-between mb-2.5 sm:mb-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center bg-indigo-600 text-white shadow-md shadow-indigo-600/30 group-hover:scale-105 transition-transform">
+                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
 
-            return (
-              <motion.div
-                key={portal.to}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: index * 0.1 }}
-                className="group relative w-full max-w-md"
-              >
-                <Link
-                  to={portal.to}
-                  className={`flex flex-col justify-between h-full p-6 sm:p-7 rounded-3xl border transition-all duration-300 relative overflow-hidden shadow-lg ${
-                    isDarkMode 
-                      ? 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-900/90 shadow-black/30' 
-                      : 'bg-white border-slate-200/90 hover:bg-slate-50/70 shadow-slate-200/60'
-                  } ${portal.accent.border}`}
-                >
-                  {/* Subtle Card Ambient Glow on Hover */}
-                  <div className={`absolute -top-24 -right-24 w-48 h-48 rounded-full bg-gradient-to-br ${portal.accent.glow} blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
+                <span className="text-[9px] sm:text-[10px] font-bold font-mono uppercase tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border bg-indigo-500/10 text-indigo-600 border-indigo-500/20">
+                  Contestant Room
+                </span>
+              </div>
 
-                  {/* Top Meta info */}
-                  <div>
-                    <div className="flex items-center justify-between mb-5">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-105 ${portal.accent.iconBg}`}>
-                        <Icon className="w-6 h-6" />
-                      </div>
+              {/* Title */}
+              <div className="text-left mb-2 sm:mb-3">
+                <h2 className="text-base sm:text-xl font-black tracking-tight flex items-center justify-between text-slate-900">
+                  <span>Player Controller</span>
+                  <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
+                </h2>
+                <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+                  Join live match & submit answers
+                </p>
+              </div>
 
-                      <span className={`text-[10px] font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-full border ${portal.accent.badgeBg}`}>
-                        {portal.badge}
-                      </span>
-                    </div>
-
-                    <h2 className="text-xl sm:text-2xl font-black tracking-tight mb-2 flex items-center justify-between">
-                      <span>{portal.title}</span>
-                      <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover:text-white transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
-                    </h2>
-
-                    
-                  </div>
-
-                  {/* Card Bottom: Device Pill + Action Button */}
-                  <div className="pt-5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between ">
-                   
-
-                    <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${portal.accent.button}`}>
-                      <span>{portal.actionLabel}</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    </span>
-                  </div>
-                </Link>
-              </motion.div>
-            );
-          })}
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="relative z-10 w-full max-w-6xl mx-auto px-6 py-6 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
-        <div className="flex items-center gap-2 text-center sm:text-left">
-          <span className="font-semibold text-slate-300">MLSA miet</span>
-          <span>© 2026 All Rights Reserved</span>
+              {/* Action Button */}
+              <div className="pt-2.5 sm:pt-3 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400">
+                  Ready to battle
+                </span>
+                <span className="inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold bg-indigo-600 group-hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition-all">
+                  <span>Enter Arena</span>
+                  <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                </span>
+              </div>
+            </Link>
+          </motion.div>
         </div>
 
-       
-      </footer>
+        {/* Bottom: Footer info (centered between the stickers, no overlap) */}
+        <footer className="relative z-20 w-full px-4 pb-1 sm:pb-2 flex items-center justify-center shrink-0 text-[10px] sm:text-xs text-slate-400 font-medium">
+          <p className="text-center">
+            Organized by <strong className="text-slate-800">MLSA MIET</strong> · Samarambh 4.0
+          </p>
+        </footer>
+      </div>
+
+      {/* Mascots Overlapping the bottom-left and bottom-right of the white card */}
+      <SamaarambhMascots />
     </div>
   );
 }
