@@ -916,7 +916,7 @@ export default function AdminDashboard() {
                   ) : (
                     <>
                       <StopCircle className="w-4 h-4" />
-                      <span>🛑 Stop & Calculate</span>
+                      <span>Stop & Calculate</span>
                     </>
                   )}
                 </button>

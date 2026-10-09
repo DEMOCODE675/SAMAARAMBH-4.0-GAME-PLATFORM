@@ -302,7 +302,7 @@ export default function SkribblControl() {
           round: lastRound.round || 'Round 2',
           questionNumber: lastRound.roundIndex || 1,
           type: 'skribbl',
-          questionText: `🎨 Skribbl Round ${lastRound.roundIndex || 1}: Draw & Guess`,
+          questionText: `Skribbl Round ${lastRound.roundIndex || 1}: Draw & Guess`,
           correctAnswer: revealedWord
         } : null,
         updatedAt: new Date()
