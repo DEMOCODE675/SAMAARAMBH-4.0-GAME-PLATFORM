@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Smartphone, 
-  Tv, 
-  Sliders, 
   ArrowUpRight, 
   Sun, 
   Moon
@@ -38,34 +36,6 @@ export default function HomePortal() {
         button: 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 group-hover:translate-x-0.5'
       }
     },
-    {
-      to: '/projector',
-      badge: 'Auditorium Display',
-      title: 'Stage Projector',
-      actionLabel: 'Launch Screen',
-      icon: Tv,
-      accent: {
-        glow: 'from-amber-500/20 via-orange-500/10 to-transparent',
-        border: 'group-hover:border-amber-500/60 dark:group-hover:border-amber-400/60',
-        badgeBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-        iconBg: 'bg-amber-500 text-slate-950 shadow-amber-500/30',
-        button: 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-amber-500/30 group-hover:translate-x-0.5'
-      }
-    },
-    {
-      to: '/admin',
-      badge: 'Admin Panel',
-      title: 'Control Center',
-      actionLabel: 'Open Dashboard',
-      icon: Sliders,
-      accent: {
-        glow: 'from-rose-600/20 via-pink-500/10 to-transparent',
-        border: 'group-hover:border-rose-500/60 dark:group-hover:border-rose-400/60',
-        badgeBg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
-        iconBg: 'bg-rose-600 text-white shadow-rose-600/30',
-        button: 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30 group-hover:translate-x-0.5'
-      }
-    }
   ];
 
   return (
@@ -121,12 +91,13 @@ export default function HomePortal() {
         <div className="text-center max-w-2xl mx-auto mb-10 md:mb-14">
 
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-3">
-            Choose Your Portal
+           Step In. Gear Up.<span className="text-indigo-600 dark:text-indigo-400"> Game On</span>
+            
           </h1>
         </div>
 
-        {/* 3 Portal Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Player Portal */}
+        <div className="flex justify-center">
           {portals.map((portal, index) => {
             const Icon = portal.icon;
 
@@ -136,7 +107,7 @@ export default function HomePortal() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: index * 0.1 }}
-                className="group relative"
+                className="group relative w-full max-w-md"
               >
                 <Link
                   to={portal.to}
