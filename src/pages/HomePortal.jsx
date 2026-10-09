@@ -88,12 +88,19 @@ export default function HomePortal() {
 
       {/* Main Hero & Portal Grid */}
       <main className="relative z-10 w-full max-w-6xl mx-auto px-6 py-8 md:py-12 my-auto">
-        <div className="text-center max-w-2xl mx-auto mb-10 md:mb-14">
-
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-3">
-           Step In. Gear Up.<span className="text-indigo-600 dark:text-indigo-400"> Game On</span>
-            
-          </h1>
+        <div className="relative mx-auto mb-12 max-w-5xl text-center md:mb-16">
+          <div className="pointer-events-none absolute -left-16 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-indigo-400/20 blur-3xl" />
+          <div className="pointer-events-none absolute -right-16 top-0 h-40 w-40 rounded-full bg-blue-300/30 blur-3xl" />
+          <div className="relative">
+            <h2 className={`whitespace-nowrap bg-gradient-to-r bg-clip-text text-[clamp(2rem,9vw,7rem)] font-black leading-[0.9] tracking-tight text-transparent ${
+              isDarkMode ? 'from-slate-100 via-indigo-300 to-indigo-400' : 'from-[#111936] via-indigo-800 to-[#4338ca]'
+            }`}>
+              SAMARAMBH 4.0
+            </h2>
+          { /* <h1 className="mt-5 text-[clamp(1.5rem,4vw,3.5rem)] font-black leading-none tracking-tight text-[#111936] sm:mt-6">
+              Step In. Gear Up.<span className="text-indigo-600"> Game On</span>
+            </h1> */}
+          </div>
         </div>
 
         {/* Player Portal */}
