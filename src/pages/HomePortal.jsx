@@ -58,7 +58,7 @@ export default function HomePortal() {
                 </div>
 
                 <span className="text-[9px] sm:text-[10px] font-bold font-mono uppercase tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border bg-indigo-500/10 text-indigo-600 border-indigo-500/20">
-                  Contestant Room
+                  Players Room
                 </span>
               </div>
 
@@ -68,18 +68,14 @@ export default function HomePortal() {
                   <span>Player Controller</span>
                   <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
                 </h2>
-                <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
-                  Join live match & submit answers
-                </p>
+                
               </div>
 
               {/* Action Button */}
               <div className="pt-2.5 sm:pt-3 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400">
-                  Ready to battle
-                </span>
+              
                 <span className="inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold bg-indigo-600 group-hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition-all">
-                  <span>Enter Arena</span>
+                  <span>Enter To The Game</span>
                   <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 </span>
               </div>
@@ -90,7 +86,7 @@ export default function HomePortal() {
         {/* Bottom: Footer info (centered between the stickers, no overlap) */}
         <footer className="relative z-20 w-full px-4 pb-1 sm:pb-2 flex items-center justify-center shrink-0 text-[10px] sm:text-xs text-slate-400 font-medium">
           <p className="text-center">
-            Organized by <strong className="text-slate-800">MLSA MIET</strong> · Samarambh 4.0
+            Organized by <strong className="text-slate-800">MLSA MIET</strong>
           </p>
         </footer>
       </div>
