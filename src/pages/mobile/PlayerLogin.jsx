@@ -61,10 +61,8 @@ export default function PlayerLogin() {
         <div className="relative z-20 pt-1 sm:pt-2 md:pt-3 px-2 sm:px-4 text-center shrink-0">
           <SamaarambhHeroTitle className="text-[clamp(1.4rem,4.2vw,3.6rem)]" />
           <div className="mt-1 sm:mt-1.5 flex items-center justify-center">
-            <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-[10px] sm:text-xs font-bold text-indigo-700 tracking-wide shadow-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
-              Player Arena Check-in
-            </span>
+           
+            
           </div>
         </div>
 
